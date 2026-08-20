@@ -27,6 +27,7 @@ type Props = {
 }
 
 const BANNER_IMAGE = '/brand/banner4k.png'
+const PAGE_SIZE = 8
 
 function whatsappHref(e164: string) {
   const n = e164.replace(/\D/g, '')
@@ -159,6 +160,7 @@ export function CasioStorefront({
 }: Props) {
   const [activeSlug, setActiveSlug] = useState<string | null>(null)
   const [allProducts, setAllProducts] = useState<ProductRow[]>([])
+  const [visibleLimit, setVisibleLimit] = useState(PAGE_SIZE)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [detail, setDetail] = useState<ProductRow | null>(null)
@@ -195,20 +197,30 @@ export function CasioStorefront({
     }
   }, [])
 
-  const shownCount = useMemo(() => {
-    if (!activeCategory) return allProducts.length
-    return allProducts.filter((p) => p.category_id === activeCategory.id).length
+  const filteredProducts = useMemo(() => {
+    if (!activeCategory) return allProducts
+    return allProducts.filter((p) => p.category_id === activeCategory.id)
   }, [allProducts, activeCategory])
+
+  const visibleProducts = useMemo(
+    () => filteredProducts.slice(0, visibleLimit),
+    [filteredProducts, visibleLimit],
+  )
+
+  const hasMore = visibleLimit < filteredProducts.length
+  const year = new Date().getFullYear()
 
   function selectCategory(slug: string | null) {
     setActiveSlug(slug)
+    setVisibleLimit(PAGE_SIZE)
     requestAnimationFrame(() => {
       catalogRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
     })
   }
 
   return (
-    <div className="mx-auto min-h-screen w-full max-w-md bg-casio-bg pb-10 text-casio-text sm:max-w-xl md:max-w-3xl md:pb-12 lg:max-w-5xl">
+    <div className="flex min-h-screen w-full flex-col bg-casio-bg text-casio-text">
+      <div className="mx-auto w-full max-w-md flex-1 pb-10 sm:max-w-xl md:max-w-3xl md:pb-12 lg:max-w-5xl">
       <header className="sticky top-0 z-40 bg-casio-bg/90 px-3 py-2 backdrop-blur-md sm:px-6 sm:py-3 lg:px-8">
         <div className="flex items-center justify-between gap-3">
           <Link href="/" className="header-logo relative shrink-0">
@@ -275,6 +287,14 @@ export function CasioStorefront({
 
       <div className="px-3 pt-2 sm:px-6 sm:pt-3 lg:px-8">
         <HeroBanner promo={heroPromo} />
+        <div className="mt-4 text-center sm:mt-5">
+          <p className="font-casio text-[0.95rem] leading-snug tracking-[0.14em] text-casio-lime sm:text-lg sm:tracking-[0.16em] md:text-xl md:tracking-[0.18em]">
+            Eduardo Viñolo
+          </p>
+          <p className="mt-1 font-casio text-[0.8rem] leading-snug tracking-[0.12em] text-casio-lime/85 sm:mt-1.5 sm:text-base sm:tracking-[0.14em] md:text-lg md:tracking-[0.16em]">
+            marcando la diferencia desde 1981
+          </p>
+        </div>
       </div>
 
       {featuredProducts.length > 0 && heroPromo.show_featured_on_home !== false ? (
@@ -363,7 +383,7 @@ export function CasioStorefront({
             ) : null}
           </div>
           <span className="shrink-0 text-[10px] text-casio-muted sm:text-xs">
-            {shownCount} en catálogo
+            {filteredProducts.length} en catálogo
           </span>
         </div>
 
@@ -373,70 +393,82 @@ export function CasioStorefront({
           <p className="py-10 text-center text-sm text-red-300" role="alert">
             {error}
           </p>
-        ) : allProducts.length === 0 ? (
+        ) : filteredProducts.length === 0 ? (
           <div className="rounded-2xl border border-dashed border-white/15 px-6 py-12 text-center">
             <CasioMark size="md" className="justify-center opacity-30" />
             <p className="mt-3 text-sm text-casio-muted">Todavía no hay productos cargados.</p>
           </div>
         ) : (
-          <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 lg:grid-cols-4">
-            {allProducts.map((p) => {
-              const visible = !activeCategory || p.category_id === activeCategory.id
-              const imgUrl = productImagePublicUrl(supabaseUrl, p.image_path)
-              const catName = categoryById(p.category_id)
-              return (
-                <article
-                  key={p.id}
-                  hidden={!visible}
-                  className={`overflow-hidden rounded-2xl border border-white/10 bg-casio-card transition hover:border-casio-lime/30 ${
-                    visible ? '' : 'hidden'
-                  }`}
-                >
-                  <button
-                    type="button"
-                    onClick={() => setDetail(p)}
-                    className="relative flex aspect-[4/5] w-full items-end justify-center bg-[#0a0a0a] px-3 pt-4 text-left"
-                    aria-label={`Ver detalle de ${p.name}`}
-                    tabIndex={visible ? 0 : -1}
+          <>
+            <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 lg:grid-cols-4">
+              {visibleProducts.map((p) => {
+                const imgUrl = productImagePublicUrl(supabaseUrl, p.image_path)
+                const catName = categoryById(p.category_id)
+                return (
+                  <article
+                    key={p.id}
+                    className="overflow-hidden rounded-2xl border border-white/10 bg-casio-card transition hover:border-casio-lime/30"
                   >
-                    {imgUrl ? (
-                      <Image
-                        src={imgUrl}
-                        alt={p.name}
-                        width={140}
-                        height={140}
-                        className="max-h-[85%] w-auto object-contain drop-shadow-md"
-                        unoptimized
+                    <button
+                      type="button"
+                      onClick={() => setDetail(p)}
+                      className="relative flex aspect-[4/5] w-full items-end justify-center bg-[#0a0a0a] px-3 pt-4 text-left"
+                      aria-label={`Ver detalle de ${p.name}`}
+                    >
+                      {imgUrl ? (
+                        <Image
+                          src={imgUrl}
+                          alt={p.name}
+                          width={140}
+                          height={140}
+                          className="max-h-[85%] w-auto object-contain drop-shadow-md"
+                          unoptimized
+                        />
+                      ) : (
+                        <div className="flex h-full items-center justify-center">
+                          <CasioMark size="sm" className="opacity-20" />
+                        </div>
+                      )}
+                      {p.stock < 1 ? (
+                        <span className="absolute left-2 top-2 rounded-md bg-black/80 px-2 py-1 text-[10px] font-bold uppercase tracking-wide text-white/90 ring-1 ring-white/20">
+                          Sin stock
+                        </span>
+                      ) : null}
+                    </button>
+                    <div className="border-t border-white/5 p-3 sm:p-4">
+                      <h4 className="line-clamp-2 text-xs font-semibold leading-snug sm:text-sm">{p.name}</h4>
+                      <p className="mt-2 text-sm font-bold text-casio-lime sm:text-base">{formatMoneyArs(p.price)}</p>
+                      {p.stock < 1 ? (
+                        <p className="mt-1 text-[11px] font-medium text-casio-muted">Sin stock</p>
+                      ) : null}
+                      <AddToCartButton
+                        productId={p.id}
+                        name={p.name}
+                        unitPrice={p.price}
+                        imagePath={p.image_path}
+                        categoryName={catName}
                       />
-                    ) : (
-                      <div className="flex h-full items-center justify-center">
-                        <CasioMark size="sm" className="opacity-20" />
-                      </div>
-                    )}
-                    {p.stock < 1 ? (
-                      <span className="absolute left-2 top-2 rounded-md bg-black/80 px-2 py-1 text-[10px] font-bold uppercase tracking-wide text-white/90 ring-1 ring-white/20">
-                        Sin stock
-                      </span>
-                    ) : null}
-                  </button>
-                  <div className="border-t border-white/5 p-3 sm:p-4">
-                    <h4 className="line-clamp-2 text-xs font-semibold leading-snug sm:text-sm">{p.name}</h4>
-                    <p className="mt-2 text-sm font-bold text-casio-lime sm:text-base">{formatMoneyArs(p.price)}</p>
-                    {p.stock < 1 ? (
-                      <p className="mt-1 text-[11px] font-medium text-casio-muted">Sin stock</p>
-                    ) : null}
-                    <AddToCartButton
-                      productId={p.id}
-                      name={p.name}
-                      unitPrice={p.price}
-                      imagePath={p.image_path}
-                      categoryName={catName}
-                    />
-                  </div>
-                </article>
-              )
-            })}
-          </div>
+                    </div>
+                  </article>
+                )
+              })}
+            </div>
+
+            {hasMore ? (
+              <div className="mt-6 flex flex-col items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setVisibleLimit((n) => n + PAGE_SIZE)}
+                  className="rounded-xl border border-casio-lime/50 bg-casio-lime/10 px-5 py-2.5 text-xs font-bold tracking-wide text-casio-lime transition hover:bg-casio-lime hover:text-black sm:text-sm"
+                >
+                  Ver más
+                </button>
+                <p className="text-[10px] text-casio-muted">
+                  Mostrando {visibleProducts.length} de {filteredProducts.length}
+                </p>
+              </div>
+            ) : null}
+          </>
         )}
       </section>
 
@@ -448,6 +480,64 @@ export function CasioStorefront({
           onClose={() => setDetail(null)}
         />
       ) : null}
+      </div>
+
+      <footer className="mt-auto w-full border-t border-white/10 bg-casio-surface/80">
+        <div className="mx-auto w-full max-w-md px-4 py-8 sm:max-w-xl sm:px-6 md:max-w-3xl lg:max-w-5xl lg:px-8">
+          <p className="font-casio text-lg tracking-[0.14em] text-casio-lime">EDUARDO VIÑOLO</p>
+          <p className="mt-1 text-xs text-casio-muted">Calculadoras · Calidad y precisión desde 1981</p>
+
+          <div className="mt-5 flex flex-wrap gap-x-4 gap-y-2 text-[11px] text-casio-muted">
+            <Link href="/#catalogo" className="hover:text-casio-lime">
+              Catálogo
+            </Link>
+            <Link href="/ofertas" className="hover:text-casio-lime">
+              Ofertas
+            </Link>
+            <Link href="/destacados" className="hover:text-casio-lime">
+              Destacados
+            </Link>
+            {whatsappE164 ? (
+              <a
+                href={whatsappHref(whatsappE164)}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="hover:text-casio-lime"
+              >
+                WhatsApp
+              </a>
+            ) : null}
+            {contactEmail ? (
+              <a href={`mailto:${contactEmail}`} className="hover:text-casio-lime">
+                Contacto
+              </a>
+            ) : null}
+            <a href={instagramUrl} target="_blank" rel="noopener noreferrer" className="hover:text-casio-lime">
+              Instagram
+            </a>
+            <a href={facebookUrl} target="_blank" rel="noopener noreferrer" className="hover:text-casio-lime">
+              Facebook
+            </a>
+          </div>
+
+          <div className="mt-6 space-y-1 border-t border-white/10 pt-5 text-[11px] leading-relaxed text-casio-muted">
+            <p>© {year} Eduardo Viñolo. Todos los derechos reservados.</p>
+            <p>Viñolo Casio — servicio técnico y venta de calculadoras Casio.</p>
+            <p>Mendoza, Argentina.</p>
+            <p className="pt-2">
+              Desarrollo web:{' '}
+              <a
+                href="https://wa.me/5492612733660"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-casio-lime/90 hover:underline"
+              >
+                Andrés García · 261 273-3660
+              </a>
+            </p>
+          </div>
+        </div>
+      </footer>
     </div>
   )
 }
