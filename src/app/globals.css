@@ -1,0 +1,105 @@
+@import "tailwindcss";
+
+:root {
+  --casio-bg: #030303;
+  --casio-surface: #141414;
+  --casio-card: #1a1a1a;
+  --casio-lime: #b8e020;
+  --casio-lime-bright: #c8ef2a;
+  --casio-lime-dim: #96b818;
+  --casio-cream: #e8dcc8;
+  --casio-text: #f5f5f5;
+  --casio-muted: #9ca3af;
+}
+
+@theme inline {
+  --color-casio-bg: var(--casio-bg);
+  --color-casio-surface: var(--casio-surface);
+  --color-casio-card: var(--casio-card);
+  --color-casio-lime: var(--casio-lime);
+  --color-casio-lime-bright: var(--casio-lime-bright);
+  --color-casio-lime-dim: var(--casio-lime-dim);
+  --color-casio-cream: var(--casio-cream);
+  --color-casio-text: var(--casio-text);
+  --color-casio-muted: var(--casio-muted);
+  --font-sans: var(--font-dm-sans);
+  --font-casio: var(--font-bebas-neue);
+  --font-casio-logo: var(--font-michroma);
+  --font-serif: var(--font-playfair);
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background: var(--casio-bg);
+  color: var(--casio-text);
+}
+
+.casio-logo-word {
+  -webkit-text-stroke: 0.1em currentColor;
+  paint-order: stroke fill;
+}
+
+.scrollbar-none {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}
+
+.safe-bottom {
+  padding-bottom: max(0.75rem, env(safe-area-inset-bottom));
+}
+
+.casio-icon-btn {
+  @apply flex h-9 w-9 items-center justify-center rounded-lg border border-white/25 bg-transparent text-white transition hover:border-casio-lime/50 sm:h-10 sm:w-10 sm:rounded-xl;
+}
+
+.header-logo {
+  height: 3.6rem;
+  width: 7.4rem;
+  overflow: hidden;
+}
+
+@media (min-width: 640px) {
+  .header-logo {
+    height: 4.15rem;
+    width: 8.4rem;
+  }
+}
+
+.hero-banner-shell {
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.08),
+    0 18px 40px rgba(0, 0, 0, 0.45);
+}
+
+/* Sombreado del ejemplo: oscuro sólido a la izq, se difumina sobre la foto */
+.hero-shade {
+  background:
+    linear-gradient(
+      90deg,
+      #050505 0%,
+      #050505 22%,
+      rgba(5, 5, 5, 0.92) 38%,
+      rgba(5, 5, 5, 0.55) 55%,
+      rgba(5, 5, 5, 0.18) 72%,
+      transparent 88%
+    );
+}
+
+.hero-banner-image {
+  transform: translateZ(0);
+  image-rendering: auto;
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+}
+
+.hero-offer-frame {
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.12),
+    0 10px 28px rgba(0, 0, 0, 0.35);
+}
