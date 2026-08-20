@@ -114,7 +114,7 @@ export async function fetchProductsPage(
   opts: FetchProductsPageOpts = {},
 ): Promise<ProductsPage> {
   const offset = Math.max(0, opts.offset ?? 0)
-  const limit = Math.min(48, Math.max(1, opts.limit ?? 8))
+  const limit = Math.min(200, Math.max(1, opts.limit ?? 8))
   const includeInactive = opts.includeInactive ?? false
   const slug = opts.categorySlug?.trim() || null
 

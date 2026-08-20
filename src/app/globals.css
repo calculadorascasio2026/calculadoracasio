@@ -61,22 +61,25 @@ body {
 @keyframes cart-shake {
   0%,
   100% {
-    transform: translateX(0) rotate(0deg);
+    transform: translateX(0) rotate(0deg) scale(1);
   }
-  15% {
-    transform: translateX(-3px) rotate(-8deg);
+  12% {
+    transform: translateX(-4px) rotate(-10deg) scale(1.08);
   }
-  30% {
-    transform: translateX(3px) rotate(8deg);
+  25% {
+    transform: translateX(4px) rotate(10deg) scale(1.08);
   }
-  45% {
-    transform: translateX(-2px) rotate(-5deg);
+  37% {
+    transform: translateX(-3px) rotate(-7deg) scale(1.05);
   }
-  60% {
-    transform: translateX(2px) rotate(5deg);
+  50% {
+    transform: translateX(3px) rotate(7deg) scale(1.05);
+  }
+  62% {
+    transform: translateX(-2px) rotate(-4deg) scale(1.02);
   }
   75% {
-    transform: translateX(-1px) rotate(-2deg);
+    transform: translateX(2px) rotate(4deg) scale(1.02);
   }
 }
 
@@ -84,8 +87,8 @@ body {
   0% {
     transform: scale(1);
   }
-  35% {
-    transform: scale(1.35);
+  30% {
+    transform: scale(1.45);
   }
   100% {
     transform: scale(1);
@@ -93,12 +96,17 @@ body {
 }
 
 .cart-icon-alert {
-  animation: cart-shake 0.65s ease-in-out;
-  border-color: color-mix(in srgb, var(--casio-lime, #c8f542) 70%, white);
+  display: inline-flex;
+  animation: cart-shake 0.55s ease-in-out;
+  transform-origin: center;
 }
 
 .cart-badge-pop {
-  animation: cart-badge-pop 0.55s ease-out;
+  animation: cart-badge-pop 0.5s ease-out;
+}
+
+.casio-icon-btn:has(.cart-icon-alert) {
+  border-color: color-mix(in srgb, var(--casio-lime) 75%, white);
 }
 
 .header-logo {
