@@ -24,6 +24,8 @@ type CartContextValue = {
   itemCount: number
   subtotal: number
   drawerOpen: boolean
+  /** Se incrementa al agregar un producto (para animar el ícono). */
+  addAlertTick: number
   openDrawer: () => void
   closeDrawer: () => void
   toggleDrawer: () => void
@@ -77,6 +79,7 @@ function loadLines(): CartLine[] {
 export function CartProvider({ children }: { children: ReactNode }) {
   const [lines, setLines] = useState<CartLine[]>([])
   const [drawerOpen, setDrawerOpen] = useState(false)
+  const [addAlertTick, setAddAlertTick] = useState(0)
   const [hydrated, setHydrated] = useState(false)
 
   useEffect(() => {
@@ -116,7 +119,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
           },
         ]
       })
-      setDrawerOpen(true)
+      setAddAlertTick((n) => n + 1)
     },
     [],
   )
@@ -144,6 +147,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
       itemCount,
       subtotal,
       drawerOpen,
+      addAlertTick,
       openDrawer: () => setDrawerOpen(true),
       closeDrawer: () => setDrawerOpen(false),
       toggleDrawer: () => setDrawerOpen((o) => !o),
@@ -152,7 +156,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
       removeLine,
       clearCart,
     }),
-    [lines, itemCount, subtotal, drawerOpen, addProduct, setQuantity, removeLine, clearCart],
+    [lines, itemCount, subtotal, drawerOpen, addAlertTick, addProduct, setQuantity, removeLine, clearCart],
   )
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>

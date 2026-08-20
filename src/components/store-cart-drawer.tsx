@@ -9,7 +9,7 @@ import {
   orderItemsFromCartLines,
   whatsappOrderUrl,
 } from '@/lib/whatsapp-order'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 
 type Props = {
   supabaseUrl: string
@@ -20,6 +20,15 @@ export function StoreCartDrawer({ supabaseUrl, whatsappE164 }: Props) {
   const { lines, itemCount, subtotal, drawerOpen, closeDrawer, setQuantity, removeLine, clearCart } =
     useCart()
   const [sending, setSending] = useState(false)
+
+  useEffect(() => {
+    if (!drawerOpen) return
+    const prev = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    return () => {
+      document.body.style.overflow = prev
+    }
+  }, [drawerOpen])
 
   if (!drawerOpen) return null
 
@@ -61,29 +70,31 @@ export function StoreCartDrawer({ supabaseUrl, whatsappE164 }: Props) {
         aria-label="Cerrar carrito"
         onClick={closeDrawer}
       />
-      <aside className="flex h-full w-full max-w-md flex-col border-l border-white/10 bg-casio-bg shadow-2xl">
-        <div className="flex items-center justify-between border-b border-white/10 px-4 py-3">
-          <div>
-            <h2 className="font-semibold text-white">Tu carrito</h2>
-            <p className="text-[11px] text-casio-muted">
-              {itemCount === 0 ? 'Vacío' : `${itemCount} producto${itemCount === 1 ? '' : 's'}`}
-            </p>
+      <aside className="flex h-full min-h-0 w-full max-w-md flex-col border-l border-white/10 bg-casio-bg shadow-2xl">
+        <div className="shrink-0 border-b border-white/10 px-4 pb-3 pt-[max(0.75rem,env(safe-area-inset-top))]">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="font-semibold text-white">Tu carrito</h2>
+              <p className="text-[11px] text-casio-muted">
+                {itemCount === 0 ? 'Vacío' : `${itemCount} producto${itemCount === 1 ? '' : 's'}`}
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={closeDrawer}
+              className="rounded-lg p-2 text-casio-muted hover:bg-white/5 hover:text-white"
+              aria-label="Cerrar"
+            >
+              ✕
+            </button>
           </div>
-          <button
-            type="button"
-            onClick={closeDrawer}
-            className="rounded-lg p-2 text-casio-muted hover:bg-white/5 hover:text-white"
-            aria-label="Cerrar"
-          >
-            ✕
-          </button>
         </div>
 
-        <div className="flex-1 overflow-y-auto px-4 py-3">
+        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-4">
           {lines.length === 0 ? (
             <p className="text-sm text-casio-muted">Todavía no agregaste productos.</p>
           ) : (
-            <ul className="space-y-3">
+            <ul className="flex flex-col gap-3">
               {lines.map((l) => {
                 const thumb = productImagePublicUrl(supabaseUrl, l.imagePath)
                 return (
@@ -147,7 +158,7 @@ export function StoreCartDrawer({ supabaseUrl, whatsappE164 }: Props) {
           )}
         </div>
 
-        <div className="border-t border-white/10 px-4 py-4">
+        <div className="shrink-0 border-t border-white/10 px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-4">
           <div className="mb-3 flex items-center justify-between text-sm">
             <span className="text-casio-muted">Total estimado</span>
             <span className="font-bold text-casio-lime">{formatMoneyArs(subtotal)}</span>
@@ -160,9 +171,6 @@ export function StoreCartDrawer({ supabaseUrl, whatsappE164 }: Props) {
           >
             {sending ? 'Preparando…' : 'Pedir por WhatsApp'}
           </button>
-          <p className="mt-2 text-center text-[10px] leading-snug text-casio-muted">
-            Se crea un pedido con link compartible y se abre WhatsApp con la consulta.
-          </p>
         </div>
       </aside>
     </div>

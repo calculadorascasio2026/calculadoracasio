@@ -7,10 +7,12 @@ import { productImagePublicUrl } from '@/lib/image-url'
 import type { ProductRow } from '@/types/catalog'
 import Image from 'next/image'
 import Link from 'next/link'
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
 const INTERVAL_MS = 3200
 const SCROLL_IDLE_MS = 180
+/** Cantidad mínima de slides para que el carrusel se sienta infinito. */
+const MIN_SLIDES = 8
 
 type Props = {
   products: ProductRow[]
@@ -18,8 +20,24 @@ type Props = {
   linkToDestacados?: boolean
 }
 
+type Slide = { product: ProductRow; key: string; uniqueIndex: number }
+
 export function FeaturedProductsCarousel({ products, supabaseUrl, linkToDestacados = false }: Props) {
-  const n = products.length
+  const uniqueCount = products.length
+
+  const slides: Slide[] = useMemo(() => {
+    if (uniqueCount === 0) return []
+    const copies = Math.max(1, Math.ceil(MIN_SLIDES / uniqueCount))
+    const out: Slide[] = []
+    for (let c = 0; c < copies; c++) {
+      products.forEach((product, i) => {
+        out.push({ product, key: `${product.id}-${c}-${i}`, uniqueIndex: i })
+      })
+    }
+    return out
+  }, [products, uniqueCount])
+
+  const n = slides.length
   const [index, setIndex] = useState(0)
   const [userScrolling, setUserScrolling] = useState(false)
   const [paused, setPaused] = useState(false)
@@ -111,7 +129,7 @@ export function FeaturedProductsCarousel({ products, supabaseUrl, linkToDestacad
       programmaticScrollRef.current = false
     }, 450)
     return () => window.clearTimeout(t)
-  }, [index, userScrolling, reduceMotion])
+  }, [index, userScrolling, reduceMotion, n])
 
   useEffect(() => {
     if (index >= n) setIndex(0)
@@ -124,12 +142,14 @@ export function FeaturedProductsCarousel({ products, supabaseUrl, linkToDestacad
     }
   }, [])
 
-  if (n === 0) return null
+  if (uniqueCount === 0) return null
 
   const pause = () => {
     if (resumeTimeoutRef.current) clearTimeout(resumeTimeoutRef.current)
     setPaused(true)
   }
+
+  const activeUnique = slides[index]?.uniqueIndex ?? 0
 
   return (
     <div
@@ -143,7 +163,7 @@ export function FeaturedProductsCarousel({ products, supabaseUrl, linkToDestacad
         resumeTimeoutRef.current = setTimeout(() => setPaused(false), 2400)
       }}
     >
-      <div className="relative">
+      <div className="relative overflow-hidden">
         {n > 1 ? (
           <>
             <button
@@ -167,14 +187,13 @@ export function FeaturedProductsCarousel({ products, supabaseUrl, linkToDestacad
 
         <div
           ref={trackRef}
-          className={`flex snap-x snap-mandatory gap-3 overflow-x-auto scroll-smooth px-10 py-2 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden ${
-            n <= 4 ? 'justify-center md:justify-center' : ''
-          }`}
+          className="flex snap-x snap-mandatory gap-3 overflow-x-auto scroll-smooth px-10 py-3 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
           aria-roledescription="carrusel"
           aria-label="Productos destacados"
           onScroll={handleTrackScroll}
         >
-          {products.map((product, i) => {
+          {slides.map((slide, i) => {
+            const { product } = slide
             const imgUrl = productImagePublicUrl(supabaseUrl, product.image_path)
             const active = i === index
             const card = (
@@ -221,7 +240,7 @@ export function FeaturedProductsCarousel({ products, supabaseUrl, linkToDestacad
 
             return (
               <div
-                key={product.id}
+                key={slide.key}
                 ref={(el) => {
                   slideRefs.current[i] = el
                 }}
@@ -241,17 +260,17 @@ export function FeaturedProductsCarousel({ products, supabaseUrl, linkToDestacad
         </div>
       </div>
 
-      {n > 1 ? (
+      {uniqueCount > 1 ? (
         <div className="mt-2 flex justify-center gap-2">
           {products.map((p, i) => (
             <button
               key={p.id}
               type="button"
               aria-label={`Ver ${p.name}`}
-              aria-current={i === index ? 'true' : undefined}
+              aria-current={i === activeUnique ? 'true' : undefined}
               onClick={() => goTo(i)}
               className={`h-2 rounded-full transition-all ${
-                i === index ? 'w-6 bg-casio-lime' : 'w-2 bg-white/25 hover:bg-white/40'
+                i === activeUnique ? 'w-6 bg-casio-lime' : 'w-2 bg-white/25 hover:bg-white/40'
               }`}
             />
           ))}

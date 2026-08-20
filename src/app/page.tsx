@@ -1,6 +1,6 @@
 import { CasioStorefront } from '@/components/casio-storefront'
 import { fetchFeaturedProducts } from '@/lib/fetch-featured'
-import { fetchCategoriesWithProducts } from '@/lib/fetch-products'
+import { fetchCategorySummaries } from '@/lib/fetch-products'
 import { createClient } from '@/lib/supabase/server'
 import { DEFAULT_HERO_PROMO, type HeroPromo, type ProductRow } from '@/types/catalog'
 
@@ -12,15 +12,19 @@ export default async function HomePage() {
   const instagramUrl = process.env.NEXT_PUBLIC_INSTAGRAM_URL
   const facebookUrl = process.env.NEXT_PUBLIC_FACEBOOK_URL
 
-  let categories: Awaited<ReturnType<typeof fetchCategoriesWithProducts>> = []
+  let categories: Awaited<ReturnType<typeof fetchCategorySummaries>> = []
   let featuredProducts: ProductRow[] = []
   let heroPromo: HeroPromo = DEFAULT_HERO_PROMO
 
   try {
     const supabase = await createClient()
     const [cats, promoRes, featured] = await Promise.all([
-      fetchCategoriesWithProducts(supabase),
-      supabase.from('hero_promo').select('badge_text, title, subtitle, visible, show_featured_on_home, show_offers_on_home').eq('id', 1).maybeSingle(),
+      fetchCategorySummaries(supabase),
+      supabase
+        .from('hero_promo')
+        .select('badge_text, title, subtitle, visible, show_featured_on_home, show_offers_on_home')
+        .eq('id', 1)
+        .maybeSingle(),
       fetchFeaturedProducts(supabase),
     ])
     categories = cats

@@ -4,16 +4,18 @@ import { AddToCartButton } from '@/components/add-to-cart-button'
 import { CartHeaderButton } from '@/components/cart-header-button'
 import { CasioMark } from '@/components/casio-mark'
 import { FeaturedProductsCarousel } from '@/components/featured-products-carousel'
+import { ProductDetailModal } from '@/components/product-detail-modal'
+import type { CategorySummary } from '@/lib/fetch-products'
 import { formatMoneyArs } from '@/lib/format'
 import { productImagePublicUrl } from '@/lib/image-url'
-import type { CategoryWithProducts, HeroPromo, ProductRow } from '@/types/catalog'
+import type { HeroPromo, ProductRow } from '@/types/catalog'
 import { DEFAULT_HERO_PROMO } from '@/types/catalog'
 import Image from 'next/image'
 import Link from 'next/link'
-import { useMemo, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 
 type Props = {
-  categories: CategoryWithProducts[]
+  categories: CategorySummary[]
   featuredProducts?: ProductRow[]
   supabaseUrl: string
   whatsappE164?: string
@@ -25,6 +27,7 @@ type Props = {
 }
 
 const BANNER_IMAGE = '/brand/banner4k.png'
+const PAGE_SIZE = 8
 
 function whatsappHref(e164: string) {
   const n = e164.replace(/\D/g, '')
@@ -156,13 +159,95 @@ export function CasioStorefront({
   heroPromo = DEFAULT_HERO_PROMO,
 }: Props) {
   const [activeSlug, setActiveSlug] = useState<string | null>(null)
+  const [products, setProducts] = useState<ProductRow[]>([])
+  const [total, setTotal] = useState(0)
+  const [categoryName, setCategoryName] = useState<string | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [loadingMore, setLoadingMore] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [detail, setDetail] = useState<ProductRow | null>(null)
+  const catalogRef = useRef<HTMLElement>(null)
+  const sentinelRef = useRef<HTMLDivElement>(null)
+  const loadLockRef = useRef(false)
 
-  const visibleCategories = useMemo(() => {
-    if (!activeSlug) return categories
-    return categories.filter((c) => c.slug === activeSlug)
-  }, [categories, activeSlug])
+  const categoryById = useCallback(
+    (id: string) => categories.find((c) => c.id === id)?.name ?? null,
+    [categories],
+  )
 
-  const totalProducts = categories.reduce((n, c) => n + c.products.length, 0)
+  const loadPage = useCallback(
+    async (offset: number, append: boolean, slug: string | null) => {
+      const params = new URLSearchParams({
+        offset: String(offset),
+        limit: String(PAGE_SIZE),
+      })
+      if (slug) params.set('category', slug)
+
+      const res = await fetch(`/api/products?${params}`)
+      const js = (await res.json()) as {
+        error?: string
+        items?: ProductRow[]
+        total?: number
+        categoryName?: string | null
+      }
+      if (!res.ok) throw new Error(js.error ?? 'Error al cargar')
+
+      const items = js.items ?? []
+      setTotal(js.total ?? 0)
+      setCategoryName(js.categoryName ?? null)
+      setProducts((prev) => (append ? [...prev, ...items] : items))
+    },
+    [],
+  )
+
+  useEffect(() => {
+    let cancelled = false
+    setLoading(true)
+    setError(null)
+    setProducts([])
+    loadLockRef.current = false
+    void loadPage(0, false, activeSlug)
+      .catch((e) => {
+        if (!cancelled) setError(e instanceof Error ? e.message : 'Error')
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [activeSlug, loadPage])
+
+  const hasMore = products.length < total
+
+  useEffect(() => {
+    const el = sentinelRef.current
+    if (!el || !hasMore || loading || loadingMore) return
+    const obs = new IntersectionObserver(
+      (entries) => {
+        const entry = entries[0]
+        if (!entry?.isIntersecting || loadLockRef.current) return
+        loadLockRef.current = true
+        setLoadingMore(true)
+        void loadPage(products.length, true, activeSlug)
+          .catch((e) => setError(e instanceof Error ? e.message : 'Error'))
+          .finally(() => {
+            setLoadingMore(false)
+            loadLockRef.current = false
+          })
+      },
+      { rootMargin: '240px 0px' },
+    )
+    obs.observe(el)
+    return () => obs.disconnect()
+  }, [hasMore, loading, loadingMore, products.length, activeSlug, loadPage])
+
+  function selectCategory(slug: string | null) {
+    setActiveSlug(slug)
+    requestAnimationFrame(() => {
+      catalogRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    })
+  }
 
   return (
     <div className="mx-auto min-h-screen w-full max-w-md bg-casio-bg pb-10 text-casio-text sm:max-w-xl md:max-w-3xl md:pb-12 lg:max-w-5xl">
@@ -255,7 +340,7 @@ export function CasioStorefront({
           <h2 className="font-casio text-xl tracking-[0.12em] text-casio-lime md:text-2xl">CATEGORÍAS</h2>
           <button
             type="button"
-            onClick={() => setActiveSlug(null)}
+            onClick={() => selectCategory(null)}
             className="text-[11px] font-semibold text-casio-lime hover:underline sm:text-xs"
           >
             VER TODO ›
@@ -264,15 +349,14 @@ export function CasioStorefront({
 
         <div className="scrollbar-none -mx-4 flex gap-3 overflow-x-auto px-4 pb-1 md:mx-0 md:grid md:grid-cols-3 md:gap-4 md:overflow-visible md:px-0">
           {categories.map((cat) => {
-            const count = cat.products.length
-            const thumb = cat.products.find((p) => p.image_path)?.image_path
-            const imgUrl = productImagePublicUrl(supabaseUrl, thumb)
+            const count = cat.product_count
+            const imgUrl = productImagePublicUrl(supabaseUrl, cat.thumb_path)
             const selected = activeSlug === cat.slug
             return (
               <button
                 key={cat.id}
                 type="button"
-                onClick={() => setActiveSlug(selected ? null : cat.slug)}
+                onClick={() => selectCategory(selected ? null : cat.slug)}
                 className={`w-[7.5rem] shrink-0 overflow-hidden rounded-2xl border text-left transition md:w-auto ${
                   selected ? 'border-casio-lime/70 bg-casio-card' : 'border-white/10 bg-casio-card hover:border-casio-lime/40'
                 }`}
@@ -306,76 +390,106 @@ export function CasioStorefront({
         </div>
       </section>
 
-      <section id="catalogo" className="mt-8 px-4 sm:px-6 lg:px-8">
-        <div className="mb-4 flex items-end justify-between">
-          <h2 className="font-casio text-xl tracking-[0.12em] text-casio-lime md:text-2xl">PRODUCTOS</h2>
-          <span className="text-[10px] text-casio-muted sm:text-xs">{totalProducts} en catálogo</span>
+      <section
+        id="catalogo"
+        ref={catalogRef}
+        className="mt-8 scroll-mt-24 px-4 sm:px-6 lg:px-8"
+      >
+        <div className="mb-4 flex items-end justify-between gap-3">
+          <div>
+            <h2 className="font-casio text-xl tracking-[0.12em] text-casio-lime md:text-2xl">PRODUCTOS</h2>
+            {categoryName ? (
+              <p className="mt-1 text-[11px] font-medium uppercase tracking-wide text-white/60">{categoryName}</p>
+            ) : null}
+          </div>
+          <span className="shrink-0 text-[10px] text-casio-muted sm:text-xs">
+            {total} en catálogo
+          </span>
         </div>
 
-        {totalProducts === 0 ? (
+        {loading ? (
+          <p className="py-10 text-center text-sm text-casio-muted">Cargando productos…</p>
+        ) : error ? (
+          <p className="py-10 text-center text-sm text-red-300" role="alert">
+            {error}
+          </p>
+        ) : total === 0 ? (
           <div className="rounded-2xl border border-dashed border-white/15 px-6 py-12 text-center">
             <CasioMark size="md" className="justify-center opacity-30" />
             <p className="mt-3 text-sm text-casio-muted">Todavía no hay productos cargados.</p>
           </div>
         ) : (
-          visibleCategories.map((cat) =>
-            cat.products.length === 0 ? null : (
-              <div key={cat.id} className="mb-8 md:mb-10">
-                {!activeSlug ? (
-                  <h3 className="mb-3 text-[11px] font-bold uppercase tracking-[0.2em] text-white/70 sm:text-xs">{cat.name}</h3>
-                ) : null}
-                <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 lg:grid-cols-4">
-                  {cat.products.map((p) => {
-                    const imgUrl = productImagePublicUrl(supabaseUrl, p.image_path)
-                    return (
-                      <article
-                        key={p.id}
-                        className="overflow-hidden rounded-2xl border border-white/10 bg-casio-card transition hover:border-casio-lime/30"
-                      >
-                        <div className="relative flex aspect-[4/5] items-end justify-center bg-[#0a0a0a] px-3 pt-4">
-                          {imgUrl ? (
-                            <Image
-                              src={imgUrl}
-                              alt={p.name}
-                              width={140}
-                              height={140}
-                              className="max-h-[85%] w-auto object-contain drop-shadow-md"
-                              unoptimized
-                            />
-                          ) : (
-                            <div className="flex h-full items-center justify-center">
-                              <CasioMark size="sm" className="opacity-20" />
-                            </div>
-                          )}
-                          {p.stock < 1 ? (
-                            <span className="absolute left-2 top-2 rounded-md bg-black/80 px-2 py-1 text-[10px] font-bold uppercase tracking-wide text-white/90 ring-1 ring-white/20">
-                              Sin stock
-                            </span>
-                          ) : null}
+          <>
+            <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 lg:grid-cols-4">
+              {products.map((p) => {
+                const imgUrl = productImagePublicUrl(supabaseUrl, p.image_path)
+                const catName = categoryName ?? categoryById(p.category_id)
+                return (
+                  <article
+                    key={p.id}
+                    className="overflow-hidden rounded-2xl border border-white/10 bg-casio-card transition hover:border-casio-lime/30"
+                  >
+                    <button
+                      type="button"
+                      onClick={() => setDetail(p)}
+                      className="relative flex aspect-[4/5] w-full items-end justify-center bg-[#0a0a0a] px-3 pt-4 text-left"
+                      aria-label={`Ver detalle de ${p.name}`}
+                    >
+                      {imgUrl ? (
+                        <Image
+                          src={imgUrl}
+                          alt={p.name}
+                          width={140}
+                          height={140}
+                          className="max-h-[85%] w-auto object-contain drop-shadow-md"
+                          unoptimized
+                        />
+                      ) : (
+                        <div className="flex h-full items-center justify-center">
+                          <CasioMark size="sm" className="opacity-20" />
                         </div>
-                        <div className="border-t border-white/5 p-3 sm:p-4">
-                          <h4 className="line-clamp-2 text-xs font-semibold leading-snug sm:text-sm">{p.name}</h4>
-                          <p className="mt-2 text-sm font-bold text-casio-lime sm:text-base">{formatMoneyArs(p.price)}</p>
-                          {p.stock < 1 ? (
-                            <p className="mt-1 text-[11px] font-medium text-casio-muted">Sin stock</p>
-                          ) : null}
-                          <AddToCartButton
-                            productId={p.id}
-                            name={p.name}
-                            unitPrice={p.price}
-                            imagePath={p.image_path}
-                            categoryName={cat.name}
-                          />
-                        </div>
-                      </article>
-                    )
-                  })}
-                </div>
-              </div>
-            ),
-          )
+                      )}
+                      {p.stock < 1 ? (
+                        <span className="absolute left-2 top-2 rounded-md bg-black/80 px-2 py-1 text-[10px] font-bold uppercase tracking-wide text-white/90 ring-1 ring-white/20">
+                          Sin stock
+                        </span>
+                      ) : null}
+                    </button>
+                    <div className="border-t border-white/5 p-3 sm:p-4">
+                      <h4 className="line-clamp-2 text-xs font-semibold leading-snug sm:text-sm">{p.name}</h4>
+                      <p className="mt-2 text-sm font-bold text-casio-lime sm:text-base">{formatMoneyArs(p.price)}</p>
+                      {p.stock < 1 ? (
+                        <p className="mt-1 text-[11px] font-medium text-casio-muted">Sin stock</p>
+                      ) : null}
+                      <AddToCartButton
+                        productId={p.id}
+                        name={p.name}
+                        unitPrice={p.price}
+                        imagePath={p.image_path}
+                        categoryName={catName}
+                      />
+                    </div>
+                  </article>
+                )
+              })}
+            </div>
+
+            <div ref={sentinelRef} className="h-8 w-full" aria-hidden />
+            {loadingMore ? (
+              <p className="py-4 text-center text-xs text-casio-muted">Cargando más…</p>
+            ) : null}
+          </>
         )}
       </section>
+
+      {detail ? (
+        <ProductDetailModal
+          product={detail}
+          supabaseUrl={supabaseUrl}
+          categoryName={categoryName ?? categoryById(detail.category_id)}
+          onClose={() => setDetail(null)}
+        />
+      ) : null}
     </div>
   )
 }
