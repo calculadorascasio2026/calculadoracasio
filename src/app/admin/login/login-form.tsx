@@ -46,7 +46,7 @@ export function LoginForm() {
       return
     }
 
-    window.location.assign('/admin/products')
+    window.location.assign('/admin')
   }
 
   return (

@@ -40,7 +40,34 @@ export async function updateSession(request: NextRequest) {
     },
   })
 
-  await supabase.auth.getUser()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
+  const path = request.nextUrl.pathname
+
+  if (path === '/admin/login' && user) {
+    const { data: isAdmin } = await supabase.rpc('current_user_is_admin')
+    if (isAdmin === true) {
+      const url = request.nextUrl.clone()
+      url.pathname = '/admin'
+      const redirectRes = NextResponse.redirect(url)
+      supabaseResponse.cookies.getAll().forEach((c) => {
+        redirectRes.cookies.set(c.name, c.value)
+      })
+      return redirectRes
+    }
+  }
+
+  if (path.startsWith('/admin') && path !== '/admin/login' && !user) {
+    const url = request.nextUrl.clone()
+    url.pathname = '/admin/login'
+    const redirectRes = NextResponse.redirect(url)
+    supabaseResponse.cookies.getAll().forEach((c) => {
+      redirectRes.cookies.set(c.name, c.value)
+    })
+    return redirectRes
+  }
 
   return supabaseResponse
 }

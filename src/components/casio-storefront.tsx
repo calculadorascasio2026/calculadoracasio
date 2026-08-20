@@ -1,20 +1,27 @@
 'use client'
 
+import { AddToCartButton } from '@/components/add-to-cart-button'
+import { CartHeaderButton } from '@/components/cart-header-button'
 import { CasioMark } from '@/components/casio-mark'
+import { FeaturedProductsCarousel } from '@/components/featured-products-carousel'
 import { formatMoneyArs } from '@/lib/format'
 import { productImagePublicUrl } from '@/lib/image-url'
-import type { CategoryWithProducts } from '@/types/catalog'
+import type { CategoryWithProducts, HeroPromo, ProductRow } from '@/types/catalog'
+import { DEFAULT_HERO_PROMO } from '@/types/catalog'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useMemo, useState } from 'react'
 
 type Props = {
   categories: CategoryWithProducts[]
+  featuredProducts?: ProductRow[]
   supabaseUrl: string
   whatsappE164?: string
+  contactEmail?: string
   tiktokUrl?: string
   instagramUrl?: string
   facebookUrl?: string
+  heroPromo?: HeroPromo
 }
 
 const BANNER_IMAGE = '/brand/banner4k.png'
@@ -49,25 +56,12 @@ function HeaderIcon({
   )
 }
 
-function NavIcon({ active, label, children }: { active?: boolean; label: string; children: React.ReactNode }) {
-  return (
-    <span
-      className={`flex flex-col items-center gap-1 px-2 py-1 text-[10px] font-medium sm:text-[11px] ${
-        active ? 'text-casio-lime' : 'text-casio-muted'
-      }`}
-    >
-      <span className={`h-6 w-6 ${active ? 'text-casio-lime' : 'text-white/70'}`}>{children}</span>
-      {label}
-    </span>
-  )
-}
-
 function SocialIcon({ href, label, children }: { href: string; label: string; children: React.ReactNode }) {
+  const isMail = href.startsWith('mailto:')
   return (
     <a
       href={href}
-      target="_blank"
-      rel="noopener noreferrer"
+      {...(isMail ? {} : { target: '_blank', rel: 'noopener noreferrer' })}
       className="casio-icon-btn"
       aria-label={label}
     >
@@ -76,7 +70,7 @@ function SocialIcon({ href, label, children }: { href: string; label: string; ch
   )
 }
 
-function HeroBanner() {
+function HeroBanner({ promo }: { promo: HeroPromo }) {
   return (
     <section className="hero-banner-shell relative overflow-hidden rounded-[1.65rem] border border-white/10 bg-casio-card sm:rounded-[1.85rem] md:rounded-[2rem]">
       <div className="relative aspect-[16/10] min-h-[13.5rem] sm:aspect-[16/9] sm:min-h-[18rem] md:aspect-[21/9] md:min-h-[20rem]">
@@ -115,28 +109,36 @@ function HeroBanner() {
           </a>
         </div>
 
-        <div className="absolute bottom-2.5 right-2.5 z-20 sm:bottom-3 sm:right-3 md:bottom-4 md:right-4">
-          <div className="hero-offer-frame flex w-max max-w-[min(17rem,calc(100vw-2rem))] items-stretch overflow-hidden rounded-[0.85rem] border border-white/12 bg-black/82 sm:max-w-none">
-            <div className="flex shrink-0 items-center bg-casio-cream px-2.5 py-2 sm:px-3 sm:py-2.5">
-              <span className="text-[10px] font-extrabold leading-none text-black sm:text-xs">10% OFF</span>
-            </div>
-            <div className="flex items-center px-2.5 py-2 sm:px-3">
-              <div>
-                <p className="text-[8px] font-bold uppercase leading-tight tracking-wide text-white sm:text-[10px]">
-                  Oferta en compras
-                </p>
-                <p className="text-[7px] uppercase leading-tight tracking-wide text-white/65 sm:text-[9px]">
-                  en productos seleccionados
-                </p>
+        {promo.visible && promo.show_offers_on_home !== false ? (
+          <div className="absolute bottom-2.5 right-2.5 z-20 sm:bottom-3 sm:right-3 md:bottom-4 md:right-4">
+            <Link
+              href="/ofertas"
+              className="hero-offer-frame flex w-max max-w-[min(17rem,calc(100vw-2rem))] items-stretch overflow-hidden rounded-[0.85rem] border border-white/12 bg-black/82 transition hover:border-casio-lime/50 sm:max-w-none"
+              aria-label="Ver ofertas"
+            >
+              <div className="flex shrink-0 items-center bg-casio-cream px-2.5 py-2 sm:px-3 sm:py-2.5">
+                <span className="text-[10px] font-extrabold leading-none text-black sm:text-xs">
+                  {promo.badge_text}
+                </span>
               </div>
-            </div>
-            <div className="flex shrink-0 items-center pr-2.5 text-casio-lime sm:pr-3">
-              <svg viewBox="0 0 24 24" className="h-4 w-4 sm:h-5 sm:w-5" fill="currentColor" aria-hidden>
-                <path d="M21.41 11.58l-9-9C12.05 2.22 11.55 2 11 2H4c-1.1 0-2 .9-2 2v7c0 .55.22 1.05.59 1.42l9 9c.36.36.86.58 1.41.58s1.05-.22 1.41-.59l7-7c.37-.36.59-.86.59-1.41s-.23-1.06-.59-1.42zM5.5 7C4.67 7 4 6.33 4 5.5S4.67 4 5.5 4 7 4.67 7 5.5 6.33 7 5.5 7z" />
-              </svg>
-            </div>
+              <div className="flex items-center px-2.5 py-2 sm:px-3">
+                <div>
+                  <p className="text-[8px] font-bold uppercase leading-tight tracking-wide text-white sm:text-[10px]">
+                    {promo.title}
+                  </p>
+                  <p className="text-[7px] uppercase leading-tight tracking-wide text-white/65 sm:text-[9px]">
+                    {promo.subtitle}
+                  </p>
+                </div>
+              </div>
+              <div className="flex shrink-0 items-center pr-2.5 text-casio-lime sm:pr-3">
+                <svg viewBox="0 0 24 24" className="h-4 w-4 sm:h-5 sm:w-5" fill="currentColor" aria-hidden>
+                  <path d="M21.41 11.58l-9-9C12.05 2.22 11.55 2 11 2H4c-1.1 0-2 .9-2 2v7c0 .55.22 1.05.59 1.42l9 9c.36.36.86.58 1.41.58s1.05-.22 1.41-.59l7-7c.37-.36.59-.86.59-1.41s-.23-1.06-.59-1.42zM5.5 7C4.67 7 4 6.33 4 5.5S4.67 4 5.5 4 7 4.67 7 5.5 6.33 7 5.5 7z" />
+                </svg>
+              </div>
+            </Link>
           </div>
-        </div>
+        ) : null}
       </div>
     </section>
   )
@@ -144,11 +146,14 @@ function HeroBanner() {
 
 export function CasioStorefront({
   categories,
+  featuredProducts = [],
   supabaseUrl,
   whatsappE164,
-  tiktokUrl = 'https://www.tiktok.com',
-  instagramUrl = 'https://www.instagram.com',
-  facebookUrl = 'https://www.facebook.com',
+  contactEmail,
+  tiktokUrl,
+  instagramUrl = 'https://www.instagram.com/serviciotecnicovinolo/',
+  facebookUrl = 'https://www.facebook.com/profile.php?id=61590593975773',
+  heroPromo = DEFAULT_HERO_PROMO,
 }: Props) {
   const [activeSlug, setActiveSlug] = useState<string | null>(null)
 
@@ -160,7 +165,7 @@ export function CasioStorefront({
   const totalProducts = categories.reduce((n, c) => n + c.products.length, 0)
 
   return (
-    <div className="mx-auto min-h-screen w-full max-w-md bg-casio-bg pb-28 text-casio-text sm:max-w-xl md:max-w-3xl md:pb-12 lg:max-w-5xl">
+    <div className="mx-auto min-h-screen w-full max-w-md bg-casio-bg pb-10 text-casio-text sm:max-w-xl md:max-w-3xl md:pb-12 lg:max-w-5xl">
       <header className="sticky top-0 z-40 bg-casio-bg/90 px-3 py-2 backdrop-blur-md sm:px-6 sm:py-3 lg:px-8">
         <div className="flex items-center justify-between gap-3">
           <Link href="/" className="header-logo relative shrink-0">
@@ -174,11 +179,21 @@ export function CasioStorefront({
             />
           </Link>
           <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
-            <SocialIcon href={tiktokUrl} label="TikTok">
-              <svg viewBox="0 0 24 24" className="h-[18px] w-[18px] fill-current" aria-hidden>
-                <path d="M14.5 3c.4 2.4 1.8 4.1 4.2 4.5v2.3c-1.4 0-2.7-.5-3.8-1.3v6.6c0 3.4-2.7 6.1-6.1 6.1S2.7 18.5 2.7 15.1c0-3.3 2.6-6 5.9-6.1v2.4c-2 .1-3.5 1.7-3.5 3.7 0 2 1.7 3.7 3.7 3.7s3.7-1.7 3.7-3.7V3h2z" />
-              </svg>
-            </SocialIcon>
+            {tiktokUrl ? (
+              <SocialIcon href={tiktokUrl} label="TikTok">
+                <svg viewBox="0 0 24 24" className="h-[18px] w-[18px] fill-current" aria-hidden>
+                  <path d="M14.5 3c.4 2.4 1.8 4.1 4.2 4.5v2.3c-1.4 0-2.7-.5-3.8-1.3v6.6c0 3.4-2.7 6.1-6.1 6.1S2.7 18.5 2.7 15.1c0-3.3 2.6-6 5.9-6.1v2.4c-2 .1-3.5 1.7-3.5 3.7 0 2 1.7 3.7 3.7 3.7s3.7-1.7 3.7-3.7V3h2z" />
+                </svg>
+              </SocialIcon>
+            ) : null}
+            {contactEmail ? (
+              <SocialIcon href={`mailto:${contactEmail}`} label="Email">
+                <svg viewBox="0 0 24 24" className="h-[18px] w-[18px] fill-none stroke-current" strokeWidth="1.8" aria-hidden>
+                  <rect x="3" y="5" width="18" height="14" rx="2" />
+                  <path d="M3.5 7.5 12 13l8.5-5.5" />
+                </svg>
+              </SocialIcon>
+            ) : null}
             <SocialIcon href={instagramUrl} label="Instagram">
               <svg viewBox="0 0 24 24" className="h-[18px] w-[18px] fill-none stroke-current" strokeWidth="1.8" aria-hidden>
                 <rect x="3.5" y="3.5" width="17" height="17" rx="5" />
@@ -204,26 +219,36 @@ export function CasioStorefront({
                 </svg>
               </a>
             ) : null}
-            <HeaderIcon href="/admin/login" label="Mi cuenta" className="hidden sm:flex">
+            <HeaderIcon href="/admin" label="Mi cuenta" className="hidden sm:flex">
               <svg viewBox="0 0 24 24" className="h-5 w-5 fill-none stroke-current stroke-2" aria-hidden>
                 <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
                 <circle cx="12" cy="7" r="4" />
               </svg>
             </HeaderIcon>
-            <HeaderIcon href="#catalogo" label="Carrito" badge="2" className="hidden sm:flex">
-              <svg viewBox="0 0 24 24" className="h-5 w-5 fill-none stroke-current stroke-2" aria-hidden>
-                <circle cx="9" cy="21" r="1" />
-                <circle cx="20" cy="21" r="1" />
-                <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" />
-              </svg>
-            </HeaderIcon>
+            <CartHeaderButton />
           </div>
         </div>
       </header>
 
       <div className="px-3 pt-2 sm:px-6 sm:pt-3 lg:px-8">
-        <HeroBanner />
+        <HeroBanner promo={heroPromo} />
       </div>
+
+      {featuredProducts.length > 0 && heroPromo.show_featured_on_home !== false ? (
+        <section className="mt-7 px-4 sm:px-6 lg:px-8">
+          <div className="mb-3 flex items-center justify-between gap-3">
+            <h2 className="font-casio text-xl tracking-[0.12em] text-casio-lime md:text-2xl">DESTACADOS</h2>
+            <Link href="/destacados" className="text-[11px] font-semibold text-casio-lime hover:underline sm:text-xs">
+              VER TODO ›
+            </Link>
+          </div>
+          <FeaturedProductsCarousel
+            products={featuredProducts}
+            supabaseUrl={supabaseUrl}
+            linkToDestacados
+          />
+        </section>
+      ) : null}
 
       <section className="mt-7 px-4 sm:px-6 lg:px-8">
         <div className="mb-3 flex items-center justify-between">
@@ -322,10 +347,25 @@ export function CasioStorefront({
                               <CasioMark size="sm" className="opacity-20" />
                             </div>
                           )}
+                          {p.stock < 1 ? (
+                            <span className="absolute left-2 top-2 rounded-md bg-black/80 px-2 py-1 text-[10px] font-bold uppercase tracking-wide text-white/90 ring-1 ring-white/20">
+                              Sin stock
+                            </span>
+                          ) : null}
                         </div>
                         <div className="border-t border-white/5 p-3 sm:p-4">
                           <h4 className="line-clamp-2 text-xs font-semibold leading-snug sm:text-sm">{p.name}</h4>
                           <p className="mt-2 text-sm font-bold text-casio-lime sm:text-base">{formatMoneyArs(p.price)}</p>
+                          {p.stock < 1 ? (
+                            <p className="mt-1 text-[11px] font-medium text-casio-muted">Sin stock</p>
+                          ) : null}
+                          <AddToCartButton
+                            productId={p.id}
+                            name={p.name}
+                            unitPrice={p.price}
+                            imagePath={p.image_path}
+                            categoryName={cat.name}
+                          />
                         </div>
                       </article>
                     )
@@ -336,48 +376,6 @@ export function CasioStorefront({
           )
         )}
       </section>
-
-      <nav className="safe-bottom fixed bottom-0 left-0 right-0 z-40 border-t border-white/10 bg-casio-bg/95 backdrop-blur-md md:hidden">
-        <div className="mx-auto flex max-w-md items-center justify-around px-1 py-1.5">
-          <a href="#" aria-current="page">
-            <NavIcon active label="Inicio">
-              <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden>
-                <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z" />
-              </svg>
-            </NavIcon>
-          </a>
-          <a href="#catalogo">
-            <NavIcon label="Guardados">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>
-                <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
-              </svg>
-            </NavIcon>
-          </a>
-          <a href="#catalogo">
-            <NavIcon label="Buscar">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>
-                <circle cx="11" cy="11" r="8" />
-                <path d="m21 21-4.3-4.3" />
-              </svg>
-            </NavIcon>
-          </a>
-          <a href="#catalogo">
-            <NavIcon label="Pedidos">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>
-                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-                <path d="M14 2v6h6M16 13H8M16 17H8M10 9H8" />
-              </svg>
-            </NavIcon>
-          </a>
-          <Link href="/admin/login">
-            <NavIcon label="Más">
-              <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden>
-                <path d="M3 6h18v2H3V6zm0 5h18v2H3v-2zm0 5h18v2H3v-2z" />
-              </svg>
-            </NavIcon>
-          </Link>
-        </div>
-      </nav>
     </div>
   )
 }

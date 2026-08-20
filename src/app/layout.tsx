@@ -37,13 +37,20 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode
 }>) {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? ''
+  const whatsappE164 = process.env.NEXT_PUBLIC_WHATSAPP_E164
+
   return (
     <html
       suppressHydrationWarning
       lang="es"
       className={`${dmSans.variable} ${bebasNeue.variable} ${michroma.variable} ${playfair.variable} h-full antialiased`}
     >
-      <body className="flex min-h-full flex-col font-sans">{children}</body>
+      <body className="flex min-h-full flex-col font-sans">
+        <AppProviders supabaseUrl={supabaseUrl} whatsappE164={whatsappE164}>
+          {children}
+        </AppProviders>
+      </body>
     </html>
   )
 }

@@ -15,6 +15,7 @@ export default async function AdminProductsPage() {
   const products = (prodRes.data ?? []).map((row) => ({
     ...row,
     price: Number(row.price),
+    stock: Number(row.stock ?? (row.in_stock === false ? 0 : 1)),
   })) as ProductRow[]
 
   return <AdminProductsPanel categories={categories} initialProducts={products} supabaseUrl={supabaseUrl} />

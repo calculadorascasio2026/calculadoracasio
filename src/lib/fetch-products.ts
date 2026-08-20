@@ -10,6 +10,7 @@ function mapProduct(row: Record<string, unknown>): ProductRow {
     price: Number(row.price),
     image_path: row.image_path != null ? String(row.image_path) : null,
     active: Boolean(row.active),
+    stock: Number(row.stock ?? (row.in_stock === false ? 0 : 1)),
     sort_order: Number(row.sort_order ?? 0),
     created_at: String(row.created_at),
     updated_at: String(row.updated_at),

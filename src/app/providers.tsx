@@ -1,5 +1,20 @@
+'use client'
+
+import { CartProvider } from '@/context/cart-context'
+import { StoreCartDrawer } from '@/components/store-cart-drawer'
 import type { ReactNode } from 'react'
 
-export function AppProviders({ children }: { children: ReactNode }) {
-  return children
+type Props = {
+  children: ReactNode
+  supabaseUrl: string
+  whatsappE164?: string
+}
+
+export function AppProviders({ children, supabaseUrl, whatsappE164 }: Props) {
+  return (
+    <CartProvider>
+      {children}
+      <StoreCartDrawer supabaseUrl={supabaseUrl} whatsappE164={whatsappE164} />
+    </CartProvider>
+  )
 }
