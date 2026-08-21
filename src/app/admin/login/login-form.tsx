@@ -38,6 +38,10 @@ export function LoginForm() {
     const loginBody = (await loginRes.json().catch(() => ({}))) as { error?: string }
     setLoading(false)
     if (!loginRes.ok) {
+      if (loginRes.status === 429) {
+        setError(loginBody.error ?? 'Demasiados intentos. Esperá unos minutos.')
+        return
+      }
       if (loginRes.status === 403 || loginBody.error === 'no_autorizado') {
         setError('Esta cuenta no está autorizada en admin_users.')
         return

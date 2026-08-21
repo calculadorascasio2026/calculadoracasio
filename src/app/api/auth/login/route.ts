@@ -3,6 +3,7 @@ import type { CookieOptions } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 import { type NextRequest, NextResponse } from 'next/server'
 import { usernameOrEmailToSupabaseEmail } from '@/lib/auth-login'
+import { clientIp, rateLimit } from '@/lib/rate-limit'
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
 const supabaseKey =
@@ -40,6 +41,18 @@ export async function POST(request: NextRequest) {
   const email = usernameOrEmailToSupabaseEmail(username ?? '')
   if (!email || !password) {
     return NextResponse.json({ error: 'missing_credentials' }, { status: 400 })
+  }
+
+  const ip = clientIp(request)
+  const limited = rateLimit(`login:${ip}:${email}`, { limit: 8, windowMs: 15 * 60 * 1000 })
+  if (!limited.ok) {
+    return NextResponse.json(
+      { error: 'Demasiados intentos. Esperá unos minutos e intentá de nuevo.' },
+      {
+        status: 429,
+        headers: { 'Retry-After': String(limited.retryAfterSec) },
+      },
+    )
   }
 
   const cookieStore = await cookies()

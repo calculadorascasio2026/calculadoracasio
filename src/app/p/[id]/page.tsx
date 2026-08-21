@@ -18,7 +18,7 @@ type OrderRow = {
 export default async function PublicOrderPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
   const supabase = await createClient()
-  const { data, error } = await supabase.from('orders').select('id, items, total, status, created_at').eq('id', id).maybeSingle()
+  const { data, error } = await supabase.rpc('get_public_order', { p_id: id }).maybeSingle()
 
   if (error || !data) notFound()
 

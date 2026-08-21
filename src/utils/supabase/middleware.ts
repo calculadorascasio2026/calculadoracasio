@@ -16,6 +16,12 @@ function mergeNoStoreHeaders(res: NextResponse, h: Record<string, string | undef
   }
 }
 
+function copyCookies(from: NextResponse, to: NextResponse) {
+  from.cookies.getAll().forEach((c) => {
+    to.cookies.set(c.name, c.value)
+  })
+}
+
 /** Renueva cookies de sesión en cada request (patrón recomendado Supabase + Next). */
 export async function updateSession(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request })
@@ -45,28 +51,39 @@ export async function updateSession(request: NextRequest) {
   } = await supabase.auth.getUser()
 
   const path = request.nextUrl.pathname
+  const isAdminArea = path.startsWith('/admin')
+  const isLogin = path === '/admin/login'
 
-  if (path === '/admin/login' && user) {
+  if (isAdminArea && !isLogin) {
+    if (!user) {
+      const url = request.nextUrl.clone()
+      url.pathname = '/admin/login'
+      const redirectRes = NextResponse.redirect(url)
+      copyCookies(supabaseResponse, redirectRes)
+      return redirectRes
+    }
+
+    const { data: isAdmin } = await supabase.rpc('current_user_is_admin')
+    if (isAdmin !== true) {
+      await supabase.auth.signOut()
+      const url = request.nextUrl.clone()
+      url.pathname = '/admin/login'
+      url.searchParams.set('error', 'no_autorizado')
+      const redirectRes = NextResponse.redirect(url)
+      copyCookies(supabaseResponse, redirectRes)
+      return redirectRes
+    }
+  }
+
+  if (isLogin && user) {
     const { data: isAdmin } = await supabase.rpc('current_user_is_admin')
     if (isAdmin === true) {
       const url = request.nextUrl.clone()
       url.pathname = '/admin'
       const redirectRes = NextResponse.redirect(url)
-      supabaseResponse.cookies.getAll().forEach((c) => {
-        redirectRes.cookies.set(c.name, c.value)
-      })
+      copyCookies(supabaseResponse, redirectRes)
       return redirectRes
     }
-  }
-
-  if (path.startsWith('/admin') && path !== '/admin/login' && !user) {
-    const url = request.nextUrl.clone()
-    url.pathname = '/admin/login'
-    const redirectRes = NextResponse.redirect(url)
-    supabaseResponse.cookies.getAll().forEach((c) => {
-      redirectRes.cookies.set(c.name, c.value)
-    })
-    return redirectRes
   }
 
   return supabaseResponse

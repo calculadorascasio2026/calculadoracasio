@@ -1,9 +1,12 @@
 import { AdminNav } from '@/components/admin-nav'
 import { LogoutButton } from '@/components/logout-button'
+import { requireAdmin } from '@/lib/admin'
 import Image from 'next/image'
 import Link from 'next/link'
 
-export default function AdminDashLayout({ children }: { children: React.ReactNode }) {
+export default async function AdminDashLayout({ children }: { children: React.ReactNode }) {
+  await requireAdmin()
+
   return (
     <div className="min-h-screen bg-casio-bg text-casio-text">
       <header className="border-b border-white/10">

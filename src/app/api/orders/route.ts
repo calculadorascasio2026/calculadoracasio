@@ -1,6 +1,7 @@
 import { createClient } from '@supabase/supabase-js'
 import { NextResponse } from 'next/server'
 import { orderItemsTotal, parseOrderItems } from '@/lib/order-items'
+import { clientIp, rateLimit } from '@/lib/rate-limit'
 
 function anonClient() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL
@@ -11,6 +12,18 @@ function anonClient() {
 }
 
 export async function POST(req: Request) {
+  const ip = clientIp(req)
+  const limited = rateLimit(`orders:${ip}`, { limit: 8, windowMs: 10 * 60 * 1000 })
+  if (!limited.ok) {
+    return NextResponse.json(
+      { error: 'Demasiados pedidos seguidos. Probá de nuevo en unos minutos.' },
+      {
+        status: 429,
+        headers: { 'Retry-After': String(limited.retryAfterSec) },
+      },
+    )
+  }
+
   try {
     const body = (await req.json()) as { items?: unknown }
     const parsed = parseOrderItems(body.items)
