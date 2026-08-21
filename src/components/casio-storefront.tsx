@@ -308,7 +308,6 @@ export function CasioStorefront({
           <FeaturedProductsCarousel
             products={featuredProducts}
             supabaseUrl={supabaseUrl}
-            linkToDestacados
           />
         </section>
       ) : null}

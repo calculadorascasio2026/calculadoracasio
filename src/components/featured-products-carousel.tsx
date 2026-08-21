@@ -2,27 +2,26 @@
 
 import { AddToCartButton } from '@/components/add-to-cart-button'
 import { CasioMark } from '@/components/casio-mark'
+import { ProductDetailModal } from '@/components/product-detail-modal'
 import { formatMoneyArs } from '@/lib/format'
 import { productImagePublicUrl } from '@/lib/image-url'
 import type { ProductRow } from '@/types/catalog'
 import Image from 'next/image'
-import Link from 'next/link'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
 const INTERVAL_MS = 3200
 const SCROLL_IDLE_MS = 180
-/** Cantidad mínima de slides para que el carrusel se sienta infinito. */
-const MIN_SLIDES = 8
+/** Cantidad mínima de slides para que el carrusel se sienta infinito también en desktop. */
+const MIN_SLIDES = 12
 
 type Props = {
   products: ProductRow[]
   supabaseUrl: string
-  linkToDestacados?: boolean
 }
 
 type Slide = { product: ProductRow; key: string; uniqueIndex: number }
 
-export function FeaturedProductsCarousel({ products, supabaseUrl, linkToDestacados = false }: Props) {
+export function FeaturedProductsCarousel({ products, supabaseUrl }: Props) {
   const uniqueCount = products.length
 
   const slides: Slide[] = useMemo(() => {
@@ -43,6 +42,7 @@ export function FeaturedProductsCarousel({ products, supabaseUrl, linkToDestacad
   const [paused, setPaused] = useState(false)
   const [inView, setInView] = useState(true)
   const [reduceMotion, setReduceMotion] = useState(false)
+  const [detail, setDetail] = useState<ProductRow | null>(null)
   const rootRef = useRef<HTMLDivElement>(null)
   const trackRef = useRef<HTMLDivElement>(null)
   const slideRefs = useRef<(HTMLDivElement | null)[]>([])
@@ -50,12 +50,33 @@ export function FeaturedProductsCarousel({ products, supabaseUrl, linkToDestacad
   const scrollIdleRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const resumeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
+  const pauseBriefly = useCallback((ms = 2400) => {
+    if (resumeTimeoutRef.current) clearTimeout(resumeTimeoutRef.current)
+    setPaused(true)
+    resumeTimeoutRef.current = setTimeout(() => setPaused(false), ms)
+  }, [])
+
+  const openProduct = useCallback(
+    (product: ProductRow) => {
+      if (resumeTimeoutRef.current) clearTimeout(resumeTimeoutRef.current)
+      setPaused(true)
+      setDetail(product)
+    },
+    [],
+  )
+
+  const closeProduct = useCallback(() => {
+    setDetail(null)
+    pauseBriefly(2000)
+  }, [pauseBriefly])
+
   const goTo = useCallback(
     (i: number) => {
       if (n === 0) return
+      pauseBriefly()
       setIndex(((i % n) + n) % n)
     },
-    [n],
+    [n, pauseBriefly],
   )
 
   const syncIndexFromScroll = useCallback(() => {
@@ -107,11 +128,13 @@ export function FeaturedProductsCarousel({ products, supabaseUrl, linkToDestacad
     return () => obs.disconnect()
   }, [])
 
+  const autoplayPaused = paused || detail !== null
+
   useEffect(() => {
-    if (n <= 1 || paused || userScrolling || !inView || reduceMotion) return
+    if (n <= 1 || autoplayPaused || userScrolling || !inView || reduceMotion) return
     const id = window.setInterval(() => setIndex((i) => (i + 1) % n), INTERVAL_MS)
     return () => window.clearInterval(id)
-  }, [n, paused, userScrolling, inView, reduceMotion])
+  }, [n, autoplayPaused, userScrolling, inView, reduceMotion])
 
   useEffect(() => {
     const track = trackRef.current
@@ -119,6 +142,8 @@ export function FeaturedProductsCarousel({ products, supabaseUrl, linkToDestacad
     if (!track || !slide || userScrolling) return
 
     const maxLeft = Math.max(0, track.scrollWidth - track.clientWidth)
+    if (maxLeft <= 0 && n > 1) return
+
     const targetLeft = slide.offsetLeft - (track.clientWidth - slide.offsetWidth) / 2
     programmaticScrollRef.current = true
     track.scrollTo({
@@ -127,7 +152,7 @@ export function FeaturedProductsCarousel({ products, supabaseUrl, linkToDestacad
     })
     const t = window.setTimeout(() => {
       programmaticScrollRef.current = false
-    }, 450)
+    }, 700)
     return () => window.clearTimeout(t)
   }, [index, userScrolling, reduceMotion, n])
 
@@ -144,25 +169,10 @@ export function FeaturedProductsCarousel({ products, supabaseUrl, linkToDestacad
 
   if (uniqueCount === 0) return null
 
-  const pause = () => {
-    if (resumeTimeoutRef.current) clearTimeout(resumeTimeoutRef.current)
-    setPaused(true)
-  }
-
   const activeUnique = slides[index]?.uniqueIndex ?? 0
 
   return (
-    <div
-      ref={rootRef}
-      className="relative w-full"
-      onMouseEnter={pause}
-      onMouseLeave={() => setPaused(false)}
-      onTouchStart={pause}
-      onTouchEnd={() => {
-        if (resumeTimeoutRef.current) clearTimeout(resumeTimeoutRef.current)
-        resumeTimeoutRef.current = setTimeout(() => setPaused(false), 2400)
-      }}
-    >
+    <div ref={rootRef} className="relative w-full">
       <div className="relative overflow-hidden">
         {n > 1 ? (
           <>
@@ -191,40 +201,61 @@ export function FeaturedProductsCarousel({ products, supabaseUrl, linkToDestacad
           aria-roledescription="carrusel"
           aria-label="Productos destacados"
           onScroll={handleTrackScroll}
+          onTouchStart={() => pauseBriefly(2800)}
         >
           {slides.map((slide, i) => {
             const { product } = slide
             const imgUrl = productImagePublicUrl(supabaseUrl, product.image_path)
             const active = i === index
-            const card = (
-              <article
-                className={`overflow-hidden rounded-2xl border bg-casio-card transition duration-300 ${
-                  active ? 'scale-100 border-casio-lime/40 opacity-100' : 'scale-[0.92] border-white/10 opacity-50'
-                }`}
+            return (
+              <div
+                key={slide.key}
+                ref={(el) => {
+                  slideRefs.current[i] = el
+                }}
+                className="w-[42%] min-w-[9.5rem] max-w-[11.5rem] shrink-0 snap-center sm:w-[30%] sm:min-w-[11rem] sm:max-w-[12.5rem] md:w-[22%] md:min-w-[12rem] md:max-w-[13rem]"
+                aria-hidden={!active}
               >
-                <div className="relative flex h-36 items-end justify-center bg-[#0a0a0a] px-2 pt-3 sm:h-40">
-                  {imgUrl ? (
-                    <Image
-                      src={imgUrl}
-                      alt={product.name}
-                      width={120}
-                      height={120}
-                      className="max-h-[90%] w-auto object-contain drop-shadow-md"
-                      unoptimized
-                    />
-                  ) : (
-                    <CasioMark size="sm" className="opacity-20" />
-                  )}
-                  {product.stock < 1 ? (
-                    <span className="absolute left-1.5 top-1.5 rounded bg-black/80 px-1.5 py-0.5 text-[9px] font-bold uppercase text-white/90">
-                      Sin stock
-                    </span>
-                  ) : null}
-                </div>
-                <div className="border-t border-white/5 p-2.5">
-                  <h3 className="line-clamp-2 text-[11px] font-semibold leading-snug sm:text-xs">{product.name}</h3>
-                  <p className="mt-1.5 text-xs font-bold text-casio-lime sm:text-sm">{formatMoneyArs(product.price)}</p>
-                  {!linkToDestacados ? (
+                <article
+                  className={`overflow-hidden rounded-2xl border bg-casio-card transition duration-300 ${
+                    active ? 'scale-100 border-casio-lime/40 opacity-100' : 'scale-[0.92] border-white/10 opacity-50'
+                  }`}
+                >
+                  <button
+                    type="button"
+                    onClick={() => openProduct(product)}
+                    className="relative flex h-36 w-full items-end justify-center bg-[#0a0a0a] px-2 pt-3 text-left sm:h-40"
+                    aria-label={`Ver detalle de ${product.name}`}
+                  >
+                    {imgUrl ? (
+                      <Image
+                        src={imgUrl}
+                        alt={product.name}
+                        width={120}
+                        height={120}
+                        className="max-h-[90%] w-auto object-contain drop-shadow-md"
+                        unoptimized
+                      />
+                    ) : (
+                      <CasioMark size="sm" className="opacity-20" />
+                    )}
+                    {product.stock < 1 ? (
+                      <span className="absolute left-1.5 top-1.5 rounded bg-black/80 px-1.5 py-0.5 text-[9px] font-bold uppercase text-white/90">
+                        Sin stock
+                      </span>
+                    ) : null}
+                  </button>
+                  <div className="border-t border-white/5 p-2.5">
+                    <button
+                      type="button"
+                      onClick={() => openProduct(product)}
+                      className="w-full text-left"
+                    >
+                      <h3 className="line-clamp-2 text-[11px] font-semibold leading-snug sm:text-xs">{product.name}</h3>
+                      <p className="mt-1.5 text-xs font-bold text-casio-lime sm:text-sm">
+                        {formatMoneyArs(product.price)}
+                      </p>
+                    </button>
                     <AddToCartButton
                       productId={product.id}
                       name={product.name}
@@ -233,27 +264,8 @@ export function FeaturedProductsCarousel({ products, supabaseUrl, linkToDestacad
                       className="mt-1.5"
                       label="Agregar"
                     />
-                  ) : null}
-                </div>
-              </article>
-            )
-
-            return (
-              <div
-                key={slide.key}
-                ref={(el) => {
-                  slideRefs.current[i] = el
-                }}
-                className="w-[42%] min-w-[9.5rem] max-w-[11.5rem] shrink-0 snap-center sm:w-[30%] sm:max-w-[12.5rem] md:w-[22%] md:max-w-[13rem]"
-                aria-hidden={!active}
-              >
-                {linkToDestacados ? (
-                  <Link href="/destacados" className="block">
-                    {card}
-                  </Link>
-                ) : (
-                  card
-                )}
+                  </div>
+                </article>
               </div>
             )
           })}
@@ -275,6 +287,10 @@ export function FeaturedProductsCarousel({ products, supabaseUrl, linkToDestacad
             />
           ))}
         </div>
+      ) : null}
+
+      {detail ? (
+        <ProductDetailModal product={detail} supabaseUrl={supabaseUrl} onClose={closeProduct} />
       ) : null}
     </div>
   )
