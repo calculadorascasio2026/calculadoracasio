@@ -11,11 +11,29 @@ type Props = {
   product: ProductRow
   supabaseUrl: string
   categoryName?: string | null
+  /** Precio a mostrar / agregar (ej. con descuento). Por defecto product.price */
+  unitPrice?: number
+  originalPrice?: number | null
+  discountPercent?: number | null
   onClose: () => void
 }
 
-export function ProductDetailModal({ product, supabaseUrl, categoryName, onClose }: Props) {
+export function ProductDetailModal({
+  product,
+  supabaseUrl,
+  categoryName,
+  unitPrice,
+  originalPrice,
+  discountPercent,
+  onClose,
+}: Props) {
   const imgUrl = productImagePublicUrl(supabaseUrl, product.image_path)
+  const price = unitPrice ?? product.price
+  const hasOffer =
+    typeof discountPercent === 'number' &&
+    discountPercent > 0 &&
+    typeof originalPrice === 'number' &&
+    originalPrice > price
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -60,8 +78,13 @@ export function ProductDetailModal({ product, supabaseUrl, categoryName, onClose
           ) : (
             <CasioMark size="md" className="opacity-25" />
           )}
+          {hasOffer ? (
+            <span className="absolute left-3 top-3 rounded-md bg-casio-lime px-2 py-1 text-[10px] font-extrabold text-black">
+              -{Math.round(discountPercent!)}%
+            </span>
+          ) : null}
           {product.stock < 1 ? (
-            <span className="absolute left-3 top-3 rounded-md bg-black/80 px-2 py-1 text-[10px] font-bold uppercase text-white/90 ring-1 ring-white/20">
+            <span className="absolute right-3 top-3 rounded-md bg-black/80 px-2 py-1 text-[10px] font-bold uppercase text-white/90 ring-1 ring-white/20">
               Sin stock
             </span>
           ) : null}
@@ -74,7 +97,14 @@ export function ProductDetailModal({ product, supabaseUrl, categoryName, onClose
           <h2 id="product-detail-title" className="mt-1 text-lg font-semibold leading-snug text-white">
             {product.name}
           </h2>
-          <p className="mt-2 text-xl font-bold text-casio-lime">{formatMoneyArs(product.price)}</p>
+          {hasOffer ? (
+            <div className="mt-2">
+              <p className="text-sm text-casio-muted line-through">{formatMoneyArs(originalPrice!)}</p>
+              <p className="text-xl font-bold text-casio-lime">{formatMoneyArs(price)}</p>
+            </div>
+          ) : (
+            <p className="mt-2 text-xl font-bold text-casio-lime">{formatMoneyArs(price)}</p>
+          )}
           {product.description?.trim() ? (
             <p className="mt-3 whitespace-pre-wrap text-sm leading-relaxed text-casio-muted">
               {product.description.trim()}
@@ -85,7 +115,7 @@ export function ProductDetailModal({ product, supabaseUrl, categoryName, onClose
           <AddToCartButton
             productId={product.id}
             name={product.name}
-            unitPrice={product.price}
+            unitPrice={price}
             imagePath={product.image_path}
             categoryName={categoryName}
             className="mt-4 py-2.5 text-sm"

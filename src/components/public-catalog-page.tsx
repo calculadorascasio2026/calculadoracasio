@@ -3,11 +3,13 @@
 import { AddToCartButton } from '@/components/add-to-cart-button'
 import { CartHeaderButton } from '@/components/cart-header-button'
 import { CasioMark } from '@/components/casio-mark'
+import { ProductDetailModal } from '@/components/product-detail-modal'
 import { formatMoneyArs } from '@/lib/format'
 import { productImagePublicUrl } from '@/lib/image-url'
 import type { ProductRow } from '@/types/catalog'
 import Image from 'next/image'
 import Link from 'next/link'
+import { useState } from 'react'
 
 export type PublicProductCard = ProductRow & {
   discount_percent?: number | null
@@ -22,6 +24,15 @@ type Props = {
 }
 
 export function PublicCatalogPage({ title, subtitle, products, supabaseUrl, emptyMessage }: Props) {
+  const [detail, setDetail] = useState<PublicProductCard | null>(null)
+  const detailDiscount = Number(detail?.discount_percent ?? 0)
+  const detailHasOffer = detailDiscount > 0
+  const detailFinal = detail
+    ? detailHasOffer
+      ? detail.price * (1 - detailDiscount / 100)
+      : detail.price
+    : 0
+
   return (
     <div className="mx-auto min-h-screen w-full max-w-md bg-casio-bg pb-10 text-casio-text sm:max-w-xl md:max-w-3xl lg:max-w-5xl">
       <header className="border-b border-white/10 px-4 py-4 sm:px-6 lg:px-8">
@@ -56,7 +67,12 @@ export function PublicCatalogPage({ title, subtitle, products, supabaseUrl, empt
                   key={p.id}
                   className="overflow-hidden rounded-2xl border border-white/10 bg-casio-card"
                 >
-                  <div className="relative flex aspect-[4/5] items-end justify-center bg-[#0a0a0a] px-3 pt-4">
+                  <button
+                    type="button"
+                    onClick={() => setDetail(p)}
+                    className="relative flex aspect-[4/5] w-full items-end justify-center bg-[#0a0a0a] px-3 pt-4 text-left"
+                    aria-label={`Ver detalle de ${p.name}`}
+                  >
                     {imgUrl ? (
                       <Image
                         src={imgUrl}
@@ -79,7 +95,7 @@ export function PublicCatalogPage({ title, subtitle, products, supabaseUrl, empt
                         Sin stock
                       </span>
                     ) : null}
-                  </div>
+                  </button>
                   <div className="border-t border-white/5 p-3 sm:p-4">
                     <h2 className="line-clamp-2 text-xs font-semibold leading-snug sm:text-sm">{p.name}</h2>
                     {hasOffer ? (
@@ -103,6 +119,17 @@ export function PublicCatalogPage({ title, subtitle, products, supabaseUrl, empt
           </div>
         )}
       </main>
+
+      {detail ? (
+        <ProductDetailModal
+          product={detail}
+          supabaseUrl={supabaseUrl}
+          unitPrice={detailFinal}
+          originalPrice={detailHasOffer ? detail.price : null}
+          discountPercent={detailHasOffer ? detailDiscount : null}
+          onClose={() => setDetail(null)}
+        />
+      ) : null}
     </div>
   )
 }
