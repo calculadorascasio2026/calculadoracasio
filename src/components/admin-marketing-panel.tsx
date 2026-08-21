@@ -66,6 +66,8 @@ export function AdminMarketingPanel({
   const [defaultDiscount, setDefaultDiscount] = useState('10')
   const [savingOffers, setSavingOffers] = useState(false)
   const [savingFeatured, setSavingFeatured] = useState(false)
+  const [offersSearch, setOffersSearch] = useState('')
+  const [featuredSearch, setFeaturedSearch] = useState('')
   const [message, setMessage] = useState('')
   const [error, setError] = useState('')
   const [qrUrls, setQrUrls] = useState<Partial<Record<QrKind, string>>>({})
@@ -76,6 +78,18 @@ export function AdminMarketingPanel({
     tienda: `${base}/`,
     destacados: `${base}/destacados`,
   }
+
+  const filteredOfferProducts = useMemo(() => {
+    const q = offersSearch.trim().toLocaleLowerCase('es')
+    if (!q) return products
+    return products.filter((p) => p.name.toLocaleLowerCase('es').includes(q))
+  }, [products, offersSearch])
+
+  const filteredFeaturedProducts = useMemo(() => {
+    const q = featuredSearch.trim().toLocaleLowerCase('es')
+    if (!q) return products
+    return products.filter((p) => p.name.toLocaleLowerCase('es').includes(q))
+  }, [products, featuredSearch])
 
   function toggleOffer(id: string) {
     setSelectedOffers((prev) => {
@@ -361,48 +375,61 @@ export function AdminMarketingPanel({
           </div>
         </div>
 
-        <div className="max-h-72 space-y-2 overflow-y-auto rounded-xl border border-white/5 p-2">
-          {products.map((p) => {
-            const checked = selectedOffers.has(p.id)
-            const img = productImagePublicUrl(supabaseUrl, p.image_path)
-            return (
-              <label
-                key={p.id}
-                className={`flex cursor-pointer items-center gap-3 rounded-lg px-2 py-2 ${
-                  checked ? 'bg-casio-lime/10' : 'hover:bg-white/[0.03]'
-                }`}
-              >
-                <input type="checkbox" checked={checked} onChange={() => toggleOffer(p.id)} />
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-black/40">
-                  {img ? (
-                    <Image src={img} alt="" width={40} height={40} className="object-contain" unoptimized />
-                  ) : (
-                    <span className="text-[10px] text-white/20">—</span>
-                  )}
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-medium">{p.name}</p>
-                  <p className="text-[11px] text-casio-muted">{formatMoneyArs(p.price)}</p>
-                </div>
-                {checked ? (
-                  <div className="flex items-center gap-1">
-                    <input
-                      type="number"
-                      min="1"
-                      max="100"
-                      className="w-16 rounded-lg border border-white/10 bg-black/40 px-2 py-1 text-xs"
-                      value={offers[p.id] ?? defaultDiscount}
-                      onClick={(e) => e.stopPropagation()}
-                      onChange={(e) =>
-                        setOffers((prev) => ({ ...prev, [p.id]: Number(e.target.value) || 0 }))
-                      }
-                    />
-                    <span className="text-xs text-casio-muted">%</span>
-                  </div>
-                ) : null}
-              </label>
-            )
-          })}
+        <div className="space-y-2">
+          <input
+            type="search"
+            value={offersSearch}
+            onChange={(e) => setOffersSearch(e.target.value)}
+            placeholder="Buscar producto para ofertas…"
+            className="w-full rounded-lg border border-white/10 bg-black/40 px-3 py-2 text-sm outline-none focus:border-casio-lime/40"
+          />
+          <div className="max-h-72 space-y-2 overflow-y-auto rounded-xl border border-white/5 p-2">
+            {filteredOfferProducts.length === 0 ? (
+              <p className="px-2 py-6 text-center text-xs text-casio-muted">Sin coincidencias.</p>
+            ) : (
+              filteredOfferProducts.map((p) => {
+                const checked = selectedOffers.has(p.id)
+                const img = productImagePublicUrl(supabaseUrl, p.image_path)
+                return (
+                  <label
+                    key={p.id}
+                    className={`flex cursor-pointer items-center gap-3 rounded-lg px-2 py-2 ${
+                      checked ? 'bg-casio-lime/10' : 'hover:bg-white/[0.03]'
+                    }`}
+                  >
+                    <input type="checkbox" checked={checked} onChange={() => toggleOffer(p.id)} />
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-black/40">
+                      {img ? (
+                        <Image src={img} alt="" width={40} height={40} className="object-contain" unoptimized />
+                      ) : (
+                        <span className="text-[10px] text-white/20">—</span>
+                      )}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-medium">{p.name}</p>
+                      <p className="text-[11px] text-casio-muted">{formatMoneyArs(p.price)}</p>
+                    </div>
+                    {checked ? (
+                      <div className="flex items-center gap-1">
+                        <input
+                          type="number"
+                          min="1"
+                          max="100"
+                          className="w-16 rounded-lg border border-white/10 bg-black/40 px-2 py-1 text-xs"
+                          value={offers[p.id] ?? defaultDiscount}
+                          onClick={(e) => e.stopPropagation()}
+                          onChange={(e) =>
+                            setOffers((prev) => ({ ...prev, [p.id]: Number(e.target.value) || 0 }))
+                          }
+                        />
+                        <span className="text-xs text-casio-muted">%</span>
+                      </div>
+                    ) : null}
+                  </label>
+                )
+              })
+            )}
+          </div>
         </div>
 
         <div className="flex flex-wrap items-center gap-3">
@@ -489,32 +516,45 @@ export function AdminMarketingPanel({
           </p>
         </div>
 
-        <div className="max-h-72 space-y-2 overflow-y-auto rounded-xl border border-white/5 p-2">
-          {products.map((p) => {
-            const checked = selectedFeatured.has(p.id)
-            const img = productImagePublicUrl(supabaseUrl, p.image_path)
-            return (
-              <label
-                key={p.id}
-                className={`flex cursor-pointer items-center gap-3 rounded-lg px-2 py-2 ${
-                  checked ? 'bg-casio-lime/10' : 'hover:bg-white/[0.03]'
-                }`}
-              >
-                <input type="checkbox" checked={checked} onChange={() => toggleFeatured(p.id)} />
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-black/40">
-                  {img ? (
-                    <Image src={img} alt="" width={40} height={40} className="object-contain" unoptimized />
-                  ) : (
-                    <span className="text-[10px] text-white/20">—</span>
-                  )}
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-medium">{p.name}</p>
-                  <p className="text-[11px] text-casio-muted">{formatMoneyArs(p.price)}</p>
-                </div>
-              </label>
-            )
-          })}
+        <div className="space-y-2">
+          <input
+            type="search"
+            value={featuredSearch}
+            onChange={(e) => setFeaturedSearch(e.target.value)}
+            placeholder="Buscar producto para destacados…"
+            className="w-full rounded-lg border border-white/10 bg-black/40 px-3 py-2 text-sm outline-none focus:border-casio-lime/40"
+          />
+          <div className="max-h-72 space-y-2 overflow-y-auto rounded-xl border border-white/5 p-2">
+            {filteredFeaturedProducts.length === 0 ? (
+              <p className="px-2 py-6 text-center text-xs text-casio-muted">Sin coincidencias.</p>
+            ) : (
+              filteredFeaturedProducts.map((p) => {
+                const checked = selectedFeatured.has(p.id)
+                const img = productImagePublicUrl(supabaseUrl, p.image_path)
+                return (
+                  <label
+                    key={p.id}
+                    className={`flex cursor-pointer items-center gap-3 rounded-lg px-2 py-2 ${
+                      checked ? 'bg-casio-lime/10' : 'hover:bg-white/[0.03]'
+                    }`}
+                  >
+                    <input type="checkbox" checked={checked} onChange={() => toggleFeatured(p.id)} />
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-black/40">
+                      {img ? (
+                        <Image src={img} alt="" width={40} height={40} className="object-contain" unoptimized />
+                      ) : (
+                        <span className="text-[10px] text-white/20">—</span>
+                      )}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-medium">{p.name}</p>
+                      <p className="text-[11px] text-casio-muted">{formatMoneyArs(p.price)}</p>
+                    </div>
+                  </label>
+                )
+              })
+            )}
+          </div>
         </div>
 
         <div className="flex flex-wrap items-center gap-3">

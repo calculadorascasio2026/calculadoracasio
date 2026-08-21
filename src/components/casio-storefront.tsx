@@ -159,6 +159,7 @@ export function CasioStorefront({
   heroPromo = DEFAULT_HERO_PROMO,
 }: Props) {
   const [activeSlug, setActiveSlug] = useState<string | null>(null)
+  const [searchQuery, setSearchQuery] = useState('')
   const [allProducts, setAllProducts] = useState<ProductRow[]>([])
   const [visibleLimit, setVisibleLimit] = useState(PAGE_SIZE)
   const [loading, setLoading] = useState(true)
@@ -198,9 +199,16 @@ export function CasioStorefront({
   }, [])
 
   const filteredProducts = useMemo(() => {
-    if (!activeCategory) return allProducts
-    return allProducts.filter((p) => p.category_id === activeCategory.id)
-  }, [allProducts, activeCategory])
+    const q = searchQuery.trim().toLocaleLowerCase('es')
+    return allProducts.filter((p) => {
+      if (activeCategory && p.category_id !== activeCategory.id) return false
+      if (!q) return true
+      const name = p.name.toLocaleLowerCase('es')
+      const desc = (p.description ?? '').toLocaleLowerCase('es')
+      const cat = (categoryById(p.category_id) ?? '').toLocaleLowerCase('es')
+      return name.includes(q) || desc.includes(q) || cat.includes(q)
+    })
+  }, [allProducts, activeCategory, searchQuery, categoryById])
 
   const visibleProducts = useMemo(
     () => filteredProducts.slice(0, visibleLimit),
@@ -216,6 +224,11 @@ export function CasioStorefront({
     requestAnimationFrame(() => {
       catalogRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
     })
+  }
+
+  function onSearchChange(value: string) {
+    setSearchQuery(value)
+    setVisibleLimit(PAGE_SIZE)
   }
 
   return (
@@ -372,7 +385,7 @@ export function CasioStorefront({
         ref={catalogRef}
         className="mt-8 scroll-mt-24 px-4 sm:px-6 lg:px-8"
       >
-        <div className="mb-4 flex items-end justify-between gap-3">
+        <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <h2 className="font-casio text-xl tracking-[0.12em] text-casio-lime md:text-2xl">PRODUCTOS</h2>
             {activeCategory ? (
@@ -386,6 +399,30 @@ export function CasioStorefront({
           </span>
         </div>
 
+        <div className="relative mb-5">
+          <label htmlFor="catalog-search" className="sr-only">
+            Buscar productos
+          </label>
+          <input
+            id="catalog-search"
+            type="search"
+            value={searchQuery}
+            onChange={(e) => onSearchChange(e.target.value)}
+            placeholder="Buscar por nombre, categoría…"
+            className="w-full rounded-xl border border-white/15 bg-casio-card px-4 py-2.5 pr-10 text-sm text-white placeholder:text-casio-muted outline-none transition focus:border-casio-lime/50"
+          />
+          {searchQuery ? (
+            <button
+              type="button"
+              onClick={() => onSearchChange('')}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-casio-muted hover:text-white"
+              aria-label="Limpiar búsqueda"
+            >
+              ✕
+            </button>
+          ) : null}
+        </div>
+
         {loading ? (
           <p className="py-10 text-center text-sm text-casio-muted">Cargando productos…</p>
         ) : error ? (
@@ -395,7 +432,11 @@ export function CasioStorefront({
         ) : filteredProducts.length === 0 ? (
           <div className="rounded-2xl border border-dashed border-white/15 px-6 py-12 text-center">
             <CasioMark size="md" className="justify-center opacity-30" />
-            <p className="mt-3 text-sm text-casio-muted">Todavía no hay productos cargados.</p>
+            <p className="mt-3 text-sm text-casio-muted">
+              {searchQuery.trim()
+                ? 'No hay productos que coincidan con la búsqueda.'
+                : 'Todavía no hay productos cargados.'}
+            </p>
           </div>
         ) : (
           <>
