@@ -85,6 +85,12 @@ export function AdminProductsPanel({ categories: initialCategories, initialProdu
   const [savingCategory, setSavingCategory] = useState(false)
   const [uploading, setUploading] = useState(false)
   const [error, setError] = useState('')
+  const [deleteConfirm, setDeleteConfirm] = useState<
+    | { type: 'category'; id: string; name: string }
+    | { type: 'product'; id: string; name: string }
+    | null
+  >(null)
+  const [deleting, setDeleting] = useState(false)
 
   function openNewCategory() {
     setError('')
@@ -184,7 +190,9 @@ export function AdminProductsPanel({ categories: initialCategories, initialProdu
     }
   }
 
-  async function handleDeleteCategory(categoryId: string) {
+  function requestDeleteCategory(categoryId: string) {
+    const cat = categories.find((c) => c.id === categoryId)
+    if (!cat) return
     const linked = products.filter((p) => p.category_id === categoryId)
     if (linked.length > 0) {
       setError(
@@ -192,22 +200,45 @@ export function AdminProductsPanel({ categories: initialCategories, initialProdu
       )
       return
     }
-    if (!confirm('¿Borrar esta categoría?')) return
-    setSavingCategory(true)
+    setError('')
+    setDeleteConfirm({ type: 'category', id: cat.id, name: cat.name })
+  }
+
+  function requestDeleteProduct(p: ProductRow) {
+    setError('')
+    setDeleteConfirm({ type: 'product', id: p.id, name: p.name })
+  }
+
+  async function confirmDelete() {
+    if (!deleteConfirm) return
+    setDeleting(true)
     setError('')
     try {
-      const { error: delErr } = await sb.from('categories').delete().eq('id', categoryId)
-      if (delErr) throw delErr
-      setCategories((prev) => prev.filter((c) => c.id !== categoryId))
-      if (categoryEditIdRef.current === categoryId || categoryDraft?.id === categoryId) {
-        categoryEditIdRef.current = null
-        setCategoryDraft(null)
+      if (deleteConfirm.type === 'category') {
+        const { error: delErr } = await sb.from('categories').delete().eq('id', deleteConfirm.id)
+        if (delErr) throw delErr
+        setCategories((prev) => prev.filter((c) => c.id !== deleteConfirm.id))
+        if (categoryEditIdRef.current === deleteConfirm.id || categoryDraft?.id === deleteConfirm.id) {
+          categoryEditIdRef.current = null
+          setCategoryDraft(null)
+        }
+      } else {
+        const { error: delErr } = await sb.from('products').delete().eq('id', deleteConfirm.id)
+        if (delErr) throw delErr
+        setProducts((prev) => prev.filter((p) => p.id !== deleteConfirm.id))
+        if (draft?.id === deleteConfirm.id) setDraft(null)
       }
+      setDeleteConfirm(null)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'No se pudo borrar la categoría')
+      setError(err instanceof Error ? err.message : 'No se pudo borrar')
+      setDeleteConfirm(null)
     } finally {
-      setSavingCategory(false)
+      setDeleting(false)
     }
+  }
+
+  async function handleDeleteCategory(categoryId: string) {
+    requestDeleteCategory(categoryId)
   }
 
   async function handleImage(file: File | null) {
@@ -282,15 +313,9 @@ export function AdminProductsPanel({ categories: initialCategories, initialProdu
   }
 
   async function handleDelete(id: string) {
-    if (!confirm('¿Eliminar este producto?')) return
-    setError('')
-    const { error: delErr } = await sb.from('products').delete().eq('id', id)
-    if (delErr) {
-      setError(delErr.message)
-      return
-    }
-    setProducts((prev) => prev.filter((p) => p.id !== id))
-    if (draft?.id === id) setDraft(null)
+    const p = products.find((x) => x.id === id)
+    if (!p) return
+    requestDeleteProduct(p)
   }
 
   async function toggleActive(p: ProductRow) {
@@ -327,6 +352,54 @@ export function AdminProductsPanel({ categories: initialCategories, initialProdu
 
   return (
     <div className="space-y-6">
+      {deleteConfirm ? (
+        <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black/70 p-4">
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="delete-confirm-title"
+            className="w-full max-w-sm rounded-2xl border border-white/15 bg-casio-surface p-5 shadow-2xl"
+          >
+            <h2 id="delete-confirm-title" className="text-base font-semibold text-white">
+              {deleteConfirm.type === 'category' ? '¿Borrar categoría?' : '¿Borrar producto?'}
+            </h2>
+            <p className="mt-2 text-sm text-casio-muted">
+              {deleteConfirm.type === 'category' ? (
+                <>
+                  Vas a eliminar la categoría{' '}
+                  <span className="font-semibold text-white">“{deleteConfirm.name}”</span>. Esta acción no se puede
+                  deshacer.
+                </>
+              ) : (
+                <>
+                  Vas a eliminar el producto{' '}
+                  <span className="font-semibold text-white">“{deleteConfirm.name}”</span>. Esta acción no se puede
+                  deshacer.
+                </>
+              )}
+            </p>
+            <div className="mt-5 flex flex-wrap justify-end gap-2">
+              <button
+                type="button"
+                disabled={deleting}
+                onClick={() => setDeleteConfirm(null)}
+                className="rounded-full border border-white/15 px-4 py-2 text-sm text-casio-muted hover:text-white disabled:opacity-50"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                disabled={deleting}
+                onClick={() => void confirmDelete()}
+                className="rounded-full bg-red-500 px-4 py-2 text-sm font-semibold text-white hover:bg-red-400 disabled:opacity-50"
+              >
+                {deleting ? 'Borrando…' : 'Sí, borrar'}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="font-casio text-3xl tracking-wide text-casio-lime">PRODUCTOS</h1>

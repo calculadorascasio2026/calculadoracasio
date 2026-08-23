@@ -150,8 +150,8 @@ function HeroBanner({ promo }: { promo: HeroPromo }) {
         {/* Mitad dentro del banner, mitad por fuera (borde inferior derecho) */}
         <div className="pointer-events-none absolute bottom-0 right-1 z-30 translate-y-1/2 sm:right-2 md:right-3">
           <Image
-            src="/brand/sello-eduardo-vinolo.png"
-            alt="Eduardo Viñolo desde 1981"
+            src="/brand/sello-classwiz.png"
+            alt="Casio ClassWiz"
             width={160}
             height={160}
             className="h-auto w-[4.75rem] drop-shadow-[0_8px_18px_rgba(0,0,0,0.55)] sm:w-[5.75rem] md:w-[6.75rem]"
