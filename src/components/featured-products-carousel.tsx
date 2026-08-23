@@ -224,7 +224,7 @@ export function FeaturedProductsCarousel({ products, supabaseUrl }: Props) {
                   <button
                     type="button"
                     onClick={() => openProduct(product)}
-                    className="relative flex h-36 w-full items-end justify-center bg-[#0a0a0a] px-2 pt-3 text-left sm:h-40"
+                    className="relative flex h-36 w-full items-end justify-center bg-white px-2 pt-3 text-left sm:h-40"
                     aria-label={`Ver detalle de ${product.name}`}
                   >
                     {imgUrl ? (
@@ -233,11 +233,11 @@ export function FeaturedProductsCarousel({ products, supabaseUrl }: Props) {
                         alt={product.name}
                         width={120}
                         height={120}
-                        className="max-h-[90%] w-auto object-contain drop-shadow-md"
+                        className="max-h-[90%] w-auto object-contain"
                         unoptimized
                       />
                     ) : (
-                      <CasioMark size="sm" className="opacity-20" />
+                      <CasioMark size="sm" className="!text-neutral-300 opacity-80" />
                     )}
                     {product.stock < 1 ? (
                       <span className="absolute left-1.5 top-1.5 rounded bg-black/80 px-1.5 py-0.5 text-[9px] font-bold uppercase text-white/90">

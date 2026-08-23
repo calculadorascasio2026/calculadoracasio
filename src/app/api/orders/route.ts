@@ -33,14 +33,13 @@ export async function POST(req: Request) {
 
     const total = orderItemsTotal(parsed.items)
     const supabase = anonClient()
-    const { data, error } = await supabase
-      .from('orders')
-      .insert({ items: parsed.items, total, status: 'pending' })
-      .select('id')
-      .single()
+    const { data: id, error } = await supabase.rpc('create_public_order', {
+      p_items: parsed.items,
+      p_total: total,
+    })
 
-    if (error) throw error
-    return NextResponse.json({ id: data.id })
+    if (error || !id) throw error ?? new Error('Sin id de pedido')
+    return NextResponse.json({ id })
   } catch (e) {
     console.error(e)
     return NextResponse.json({ error: 'No se pudo guardar el pedido' }, { status: 500 })

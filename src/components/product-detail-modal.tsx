@@ -49,7 +49,7 @@ export function ProductDetailModal({
   }, [onClose])
 
   return (
-    <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/65 p-4">
+    <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/65 p-3 sm:p-4">
       <button
         type="button"
         className="absolute inset-0 cursor-default border-0 bg-transparent"
@@ -60,7 +60,7 @@ export function ProductDetailModal({
         role="dialog"
         aria-modal="true"
         aria-labelledby="product-detail-title"
-        className="relative z-10 flex max-h-[min(88vh,640px)] w-full max-w-md flex-col overflow-hidden rounded-2xl border border-white/15 bg-casio-card shadow-2xl"
+        className="relative z-10 flex max-h-[min(92vh,780px)] w-full max-w-xl flex-col overflow-hidden rounded-2xl border border-white/15 bg-casio-card shadow-2xl"
       >
         <button
           type="button"
@@ -71,12 +71,16 @@ export function ProductDetailModal({
           ✕
         </button>
 
-        <div className="relative flex aspect-[4/3] shrink-0 items-center justify-center bg-[#0a0a0a] px-6 py-4">
+        <div className="relative flex h-[min(42vh,320px)] shrink-0 items-center justify-center overflow-hidden bg-white px-5 py-4 sm:h-[min(44vh,360px)]">
           {imgUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={imgUrl} alt={product.name} className="max-h-full max-w-full object-contain" />
+            <img
+              src={imgUrl}
+              alt={product.name}
+              className="max-h-full max-w-full object-contain"
+            />
           ) : (
-            <CasioMark size="md" className="opacity-25" />
+            <CasioMark size="md" className="!text-neutral-300 opacity-80" />
           )}
           {hasOffer ? (
             <span className="absolute left-3 top-3 rounded-md bg-casio-lime px-2 py-1 text-[10px] font-extrabold text-black">
@@ -90,37 +94,39 @@ export function ProductDetailModal({
           ) : null}
         </div>
 
-        <div className="min-h-0 flex-1 overflow-y-auto px-5 py-4">
-          {categoryName ? (
-            <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-casio-muted">{categoryName}</p>
-          ) : null}
-          <h2 id="product-detail-title" className="mt-1 text-lg font-semibold leading-snug text-white">
-            {product.name}
-          </h2>
-          {hasOffer ? (
+        <div className="flex min-h-0 flex-1 flex-col">
+          <div className="shrink-0 px-5 pb-3 pt-4">
+            {categoryName ? (
+              <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-casio-muted">
+                {categoryName}
+              </p>
+            ) : null}
+            <h2 id="product-detail-title" className="mt-1 text-lg font-semibold leading-snug text-white sm:text-xl">
+              {product.name}
+            </h2>
             <div className="mt-2">
-              <p className="text-sm text-casio-muted line-through">{formatMoneyArs(originalPrice!)}</p>
-              <p className="text-xl font-bold text-casio-lime">{formatMoneyArs(price)}</p>
+              {hasOffer ? (
+                <div className="flex flex-wrap items-baseline gap-x-2">
+                  <span className="text-sm text-casio-muted line-through">{formatMoneyArs(originalPrice!)}</span>
+                  <span className="text-xl font-bold text-casio-lime sm:text-2xl">{formatMoneyArs(price)}</span>
+                </div>
+              ) : (
+                <span className="text-xl font-bold text-casio-lime sm:text-2xl">{formatMoneyArs(price)}</span>
+              )}
             </div>
-          ) : (
-            <p className="mt-2 text-xl font-bold text-casio-lime">{formatMoneyArs(price)}</p>
-          )}
-          {product.description?.trim() ? (
-            <p className="mt-3 whitespace-pre-wrap text-sm leading-relaxed text-casio-muted">
-              {product.description.trim()}
-            </p>
-          ) : (
-            <p className="mt-3 text-sm text-casio-muted">Sin descripción adicional.</p>
-          )}
-          <AddToCartButton
-            productId={product.id}
-            name={product.name}
-            unitPrice={price}
-            imagePath={product.image_path}
-            categoryName={categoryName}
-            className="mt-4 py-2.5 text-sm"
-            label="Agregar al carrito"
-          />
+          </div>
+
+          <div className="mt-auto shrink-0 border-t border-white/10 px-5 py-3">
+            <AddToCartButton
+              productId={product.id}
+              name={product.name}
+              unitPrice={price}
+              imagePath={product.image_path}
+              categoryName={categoryName}
+              className="!mt-0 py-2.5 text-sm"
+              label="Agregar al carrito"
+            />
+          </div>
         </div>
       </div>
     </div>

@@ -52,9 +52,9 @@ export default async function PublicOrderPage({ params }: { params: Promise<{ id
             >
               {thumb ? (
                 // eslint-disable-next-line @next/next/no-img-element
-                <img src={thumb} alt="" className="h-16 w-16 rounded-lg object-contain bg-black" />
+                <img src={thumb} alt="" className="h-16 w-16 rounded-lg object-contain bg-white" />
               ) : (
-                <div className="flex h-16 w-16 items-center justify-center rounded-lg bg-black text-[9px] text-casio-muted">
+                <div className="flex h-16 w-16 items-center justify-center rounded-lg bg-white text-[9px] text-neutral-400">
                   sin foto
                 </div>
               )}

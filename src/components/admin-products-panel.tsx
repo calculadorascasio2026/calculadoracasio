@@ -2,6 +2,7 @@
 
 import Image from 'next/image'
 import { useMemo, useRef, useState } from 'react'
+import { compareByName } from '@/lib/sort-catalog'
 import { compressProductImageFile } from '@/lib/compress-product-image'
 import { formatMoneyArs } from '@/lib/format'
 import { productImagePublicUrl } from '@/lib/image-url'
@@ -77,7 +78,9 @@ export function AdminProductsPanel({ categories: initialCategories, initialProdu
   const [categories, setCategories] = useState(initialCategories)
   const [products, setProducts] = useState(initialProducts.map(normalizeProduct))
   const [draft, setDraft] = useState<Draft | null>(null)
-  const [categoryDraft, setCategoryDraft] = useState<{ name: string } | null>(null)
+  const [categoryDraft, setCategoryDraft] = useState<{ id: string | null; name: string } | null>(null)
+  const categoryEditIdRef = useRef<string | null>(null)
+  const categoryFormRef = useRef<HTMLFormElement>(null)
   const [saving, setSaving] = useState(false)
   const [savingCategory, setSavingCategory] = useState(false)
   const [uploading, setUploading] = useState(false)
@@ -86,11 +89,14 @@ export function AdminProductsPanel({ categories: initialCategories, initialProdu
   function openNewCategory() {
     setError('')
     setDraft(null)
-    setCategoryDraft({ name: '' })
+    categoryEditIdRef.current = null
+    setCategoryDraft({ id: null, name: '' })
+    requestAnimationFrame(() => categoryFormRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }))
   }
 
   function openEdit(p: ProductRow) {
     setError('')
+    categoryEditIdRef.current = null
     setCategoryDraft(null)
     setDraft({
       id: p.id,
@@ -103,6 +109,14 @@ export function AdminProductsPanel({ categories: initialCategories, initialProdu
       sort_order: p.sort_order,
       image_path: p.image_path,
     })
+  }
+
+  function openEditCategory(c: CategoryRow) {
+    setError('')
+    setDraft(null)
+    categoryEditIdRef.current = c.id
+    setCategoryDraft({ id: c.id, name: c.name })
+    requestAnimationFrame(() => categoryFormRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }))
   }
 
   async function handleSaveCategory(e: React.FormEvent) {
@@ -118,28 +132,79 @@ export function AdminProductsPanel({ categories: initialCategories, initialProdu
       setError('El nombre de la categoría no es válido.')
       return
     }
+    // Preferir el id guardado al abrir el formulario (no se pierde al tipear)
+    const editingId = categoryEditIdRef.current ?? categoryDraft.id
     setSavingCategory(true)
     setError('')
     try {
-      const maxOrder = categories.reduce((m, c) => Math.max(m, c.sort_order), 0)
-      const { data, error: insErr } = await sb
-        .from('categories')
-        .insert({ name, slug, sort_order: maxOrder + 1 })
-        .select('*')
-        .single()
-      if (insErr) throw insErr
-      setCategories((prev) => [
-        ...prev,
-        {
-          id: String(data.id),
-          name: String(data.name),
-          slug: String(data.slug),
-          sort_order: Number(data.sort_order ?? 0),
-        },
-      ])
+      if (editingId) {
+        const { data, error: upErr } = await sb
+          .from('categories')
+          .update({ name, slug })
+          .eq('id', editingId)
+          .select('*')
+          .single()
+        if (upErr) throw upErr
+        setCategories((prev) =>
+          prev.map((c) =>
+            c.id === editingId
+              ? {
+                  id: String(data.id),
+                  name: String(data.name),
+                  slug: String(data.slug),
+                  sort_order: Number(data.sort_order ?? 0),
+                }
+              : c,
+          ),
+        )
+      } else {
+        const maxOrder = categories.reduce((m, c) => Math.max(m, c.sort_order), 0)
+        const { data, error: insErr } = await sb
+          .from('categories')
+          .insert({ name, slug, sort_order: maxOrder + 1 })
+          .select('*')
+          .single()
+        if (insErr) throw insErr
+        setCategories((prev) => [
+          ...prev,
+          {
+            id: String(data.id),
+            name: String(data.name),
+            slug: String(data.slug),
+            sort_order: Number(data.sort_order ?? 0),
+          },
+        ])
+      }
+      categoryEditIdRef.current = null
       setCategoryDraft(null)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'No se pudo crear la categoría')
+      setError(err instanceof Error ? err.message : 'No se pudo guardar la categoría')
+    } finally {
+      setSavingCategory(false)
+    }
+  }
+
+  async function handleDeleteCategory(categoryId: string) {
+    const linked = products.filter((p) => p.category_id === categoryId)
+    if (linked.length > 0) {
+      setError(
+        `No se puede borrar: hay ${linked.length} producto${linked.length === 1 ? '' : 's'} en esta categoría. Mové o borrá esos productos primero.`,
+      )
+      return
+    }
+    if (!confirm('¿Borrar esta categoría?')) return
+    setSavingCategory(true)
+    setError('')
+    try {
+      const { error: delErr } = await sb.from('categories').delete().eq('id', categoryId)
+      if (delErr) throw delErr
+      setCategories((prev) => prev.filter((c) => c.id !== categoryId))
+      if (categoryEditIdRef.current === categoryId || categoryDraft?.id === categoryId) {
+        categoryEditIdRef.current = null
+        setCategoryDraft(null)
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'No se pudo borrar la categoría')
     } finally {
       setSavingCategory(false)
     }
@@ -243,9 +308,7 @@ export function AdminProductsPanel({ categories: initialCategories, initialProdu
     const sortedCategories = [...categories].sort((a, b) => a.sort_order - b.sort_order || a.name.localeCompare(b.name))
     return sortedCategories.map((category) => ({
       category,
-      products: products
-        .filter((p) => p.category_id === category.id)
-        .sort((a, b) => a.sort_order - b.sort_order || a.name.localeCompare(b.name)),
+      products: products.filter((p) => p.category_id === category.id).sort(compareByName),
     }))
   }, [categories, products])
 
@@ -283,14 +346,22 @@ export function AdminProductsPanel({ categories: initialCategories, initialProdu
       {error ? <p className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-300">{error}</p> : null}
 
       {categoryDraft ? (
-        <form onSubmit={handleSaveCategory} className="space-y-4 rounded-2xl border border-white/10 bg-casio-surface p-5">
-          <h2 className="text-sm font-semibold uppercase tracking-wide text-white/80">Nueva categoría</h2>
+        <form
+          ref={categoryFormRef}
+          onSubmit={handleSaveCategory}
+          className="space-y-4 rounded-2xl border border-white/10 bg-casio-surface p-5"
+        >
+          <h2 className="text-sm font-semibold uppercase tracking-wide text-white/80">
+            {categoryDraft.id ? 'Editar categoría' : 'Nueva categoría'}
+          </h2>
           <div>
             <label className="text-xs text-casio-muted">Nombre</label>
             <input
               className="mt-1 w-full rounded-lg border border-white/10 bg-black/40 px-3 py-2 text-sm"
               value={categoryDraft.name}
-              onChange={(e) => setCategoryDraft({ name: e.target.value })}
+              onChange={(e) =>
+                setCategoryDraft((prev) => (prev ? { ...prev, name: e.target.value } : prev))
+              }
               placeholder="Ej. Gráficas"
               required
               autoFocus
@@ -302,11 +373,24 @@ export function AdminProductsPanel({ categories: initialCategories, initialProdu
               disabled={savingCategory}
               className="rounded-full bg-casio-lime px-4 py-2 text-sm font-semibold text-black disabled:opacity-50"
             >
-              {savingCategory ? 'Guardando…' : 'Crear categoría'}
+              {savingCategory ? 'Guardando…' : categoryDraft.id ? 'Guardar categoría' : 'Crear categoría'}
             </button>
+            {categoryDraft.id ? (
+              <button
+                type="button"
+                disabled={savingCategory}
+                onClick={() => void handleDeleteCategory(categoryDraft.id!)}
+                className="rounded-full border border-red-400/40 px-4 py-2 text-sm font-semibold text-red-300 hover:bg-red-500/10 disabled:opacity-50"
+              >
+                Borrar categoría
+              </button>
+            ) : null}
             <button
               type="button"
-              onClick={() => setCategoryDraft(null)}
+              onClick={() => {
+                categoryEditIdRef.current = null
+                setCategoryDraft(null)
+              }}
               className="rounded-full border border-white/15 px-4 py-2 text-sm text-casio-muted hover:text-white"
             >
               Cancelar
@@ -395,7 +479,7 @@ export function AdminProductsPanel({ categories: initialCategories, initialProdu
             <div className="sm:col-span-2">
               <label className="text-xs text-casio-muted">Foto del producto</label>
               <div className="mt-2 flex flex-wrap items-center gap-4">
-                <div className="flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-white/15 bg-black/50">
+                <div className="flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-white/15 bg-white">
                   {draftImageUrl ? (
                     <Image
                       src={draftImageUrl}
@@ -479,13 +563,29 @@ export function AdminProductsPanel({ categories: initialCategories, initialProdu
                   {catProducts.length} producto{catProducts.length === 1 ? '' : 's'}
                 </p>
               </div>
-              <button
-                type="button"
-                onClick={() => openNewInCategory(category.id)}
-                className="rounded-full border border-casio-lime/40 px-3 py-1 text-xs font-semibold text-casio-lime hover:bg-casio-lime/10"
-              >
-                + En esta categoría
-              </button>
+              <div className="flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={() => openEditCategory(category)}
+                  className="rounded-full border border-white/15 px-3 py-1 text-xs font-semibold text-casio-muted hover:text-white"
+                >
+                  Editar categoría
+                </button>
+                <button
+                  type="button"
+                  onClick={() => void handleDeleteCategory(category.id)}
+                  className="rounded-full border border-red-400/35 px-3 py-1 text-xs font-semibold text-red-300/90 hover:bg-red-500/10"
+                >
+                  Borrar
+                </button>
+                <button
+                  type="button"
+                  onClick={() => openNewInCategory(category.id)}
+                  className="rounded-full border border-casio-lime/40 px-3 py-1 text-xs font-semibold text-casio-lime hover:bg-casio-lime/10"
+                >
+                  + En esta categoría
+                </button>
+              </div>
             </div>
 
             {catProducts.length === 0 ? (
@@ -509,7 +609,7 @@ export function AdminProductsPanel({ categories: initialCategories, initialProdu
                         <tr key={p.id} className="border-b border-white/5 last:border-0 hover:bg-white/[0.02]">
                           <td className="px-4 py-3">
                             <div className="flex items-center gap-3">
-                              <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-white/10 bg-black/40">
+                              <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-white/10 bg-white">
                                 {imgUrl ? (
                                   <Image
                                     src={imgUrl}

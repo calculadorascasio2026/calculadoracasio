@@ -1,10 +1,9 @@
 'use client'
 
-import { AddToCartButton } from '@/components/add-to-cart-button'
 import { CartHeaderButton } from '@/components/cart-header-button'
 import { CasioMark } from '@/components/casio-mark'
+import { ProductCardInfo } from '@/components/product-card-info'
 import { ProductDetailModal } from '@/components/product-detail-modal'
-import { formatMoneyArs } from '@/lib/format'
 import { productImagePublicUrl } from '@/lib/image-url'
 import type { ProductRow } from '@/types/catalog'
 import Image from 'next/image'
@@ -70,7 +69,7 @@ export function PublicCatalogPage({ title, subtitle, products, supabaseUrl, empt
                   <button
                     type="button"
                     onClick={() => setDetail(p)}
-                    className="relative flex aspect-[4/5] w-full items-end justify-center bg-[#0a0a0a] px-3 pt-4 text-left"
+                    className="relative flex aspect-[4/5] w-full items-end justify-center bg-white px-3 pt-4 text-left"
                     aria-label={`Ver detalle de ${p.name}`}
                   >
                     {imgUrl ? (
@@ -79,11 +78,11 @@ export function PublicCatalogPage({ title, subtitle, products, supabaseUrl, empt
                         alt={p.name}
                         width={140}
                         height={140}
-                        className="max-h-[85%] w-auto object-contain drop-shadow-md"
+                        className="max-h-[85%] w-auto object-contain"
                         unoptimized
                       />
                     ) : (
-                      <CasioMark size="sm" className="opacity-20" />
+                      <CasioMark size="sm" className="!text-neutral-300 opacity-80" />
                     )}
                     {hasOffer ? (
                       <span className="absolute left-2 top-2 rounded-md bg-casio-lime px-2 py-1 text-[10px] font-extrabold text-black">
@@ -96,23 +95,16 @@ export function PublicCatalogPage({ title, subtitle, products, supabaseUrl, empt
                       </span>
                     ) : null}
                   </button>
-                  <div className="border-t border-white/5 p-3 sm:p-4">
-                    <h2 className="line-clamp-2 text-xs font-semibold leading-snug sm:text-sm">{p.name}</h2>
-                    {hasOffer ? (
-                      <div className="mt-2">
-                        <p className="text-[11px] text-casio-muted line-through">{formatMoneyArs(p.price)}</p>
-                        <p className="text-sm font-bold text-casio-lime sm:text-base">{formatMoneyArs(finalPrice)}</p>
-                      </div>
-                    ) : (
-                      <p className="mt-2 text-sm font-bold text-casio-lime sm:text-base">{formatMoneyArs(p.price)}</p>
-                    )}
-                    <AddToCartButton
-                      productId={p.id}
-                      name={p.name}
-                      unitPrice={finalPrice}
-                      imagePath={p.image_path}
-                    />
-                  </div>
+                  <ProductCardInfo
+                    productId={p.id}
+                    name={p.name}
+                    description={p.description}
+                    unitPrice={finalPrice}
+                    originalPrice={hasOffer ? p.price : null}
+                    imagePath={p.image_path}
+                    stock={p.stock}
+                    titleTag="h2"
+                  />
                 </article>
               )
             })}

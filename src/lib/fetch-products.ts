@@ -1,5 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { CategoryRow, CategoryWithProducts, ProductRow } from '@/types/catalog'
+import { compareByName } from '@/lib/sort-catalog'
 
 export type CategorySummary = CategoryRow & {
   product_count: number
@@ -41,7 +42,7 @@ export async function fetchCategoriesWithProducts(
 
   const [catRes, prodRes] = await Promise.all([
     supabase.from('categories').select('*').order('sort_order'),
-    supabase.from('products').select('*').order('sort_order').order('name'),
+    supabase.from('products').select('*').order('name'),
   ])
 
   if (catRes.error) throw catRes.error
@@ -55,6 +56,10 @@ export async function fetchCategoriesWithProducts(
     const list = byCategory.get(p.category_id) ?? []
     list.push(p)
     byCategory.set(p.category_id, list)
+  }
+
+  for (const list of byCategory.values()) {
+    list.sort(compareByName)
   }
 
   return categories.map((c) => ({
@@ -134,7 +139,7 @@ export async function fetchProductsPage(
   }
 
   let countQ = supabase.from('products').select('id', { count: 'exact', head: true })
-  let dataQ = supabase.from('products').select('*').order('sort_order').order('name')
+  let dataQ = supabase.from('products').select('*').order('name')
 
   if (!includeInactive) {
     countQ = countQ.eq('active', true)

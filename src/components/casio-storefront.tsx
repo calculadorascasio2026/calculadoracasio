@@ -1,12 +1,12 @@
 'use client'
 
-import { AddToCartButton } from '@/components/add-to-cart-button'
 import { CartHeaderButton } from '@/components/cart-header-button'
 import { CasioMark } from '@/components/casio-mark'
 import { FeaturedProductsCarousel } from '@/components/featured-products-carousel'
+import { ProductCardInfo } from '@/components/product-card-info'
 import { ProductDetailModal } from '@/components/product-detail-modal'
 import type { CategorySummary } from '@/lib/fetch-products'
-import { formatMoneyArs } from '@/lib/format'
+import { compareByName } from '@/lib/sort-catalog'
 import { productImagePublicUrl } from '@/lib/image-url'
 import type { HeroPromo, ProductRow } from '@/types/catalog'
 import { DEFAULT_HERO_PROMO } from '@/types/catalog'
@@ -75,74 +75,92 @@ function SocialIcon({ href, label, children }: { href: string; label: string; ch
 
 function HeroBanner({ promo }: { promo: HeroPromo }) {
   return (
-    <section className="hero-banner-shell relative overflow-hidden rounded-[1.65rem] border border-white/10 bg-casio-card sm:rounded-[1.85rem] md:rounded-[2rem]">
-      <div className="relative aspect-[16/10] min-h-[13.5rem] sm:aspect-[16/9] sm:min-h-[18rem] md:aspect-[21/9] md:min-h-[20rem]">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src={BANNER_IMAGE}
-          alt="Calculadora Casio ClassWiz sobre cuaderno con fórmulas"
-          className="hero-banner-image absolute inset-0 h-full w-full object-cover object-[78%_center] sm:object-[80%_center] md:object-right"
-          decoding="async"
-          fetchPriority="high"
-        />
+    <section className="hero-banner-shell relative mb-2 sm:mb-3">
+      <div className="relative">
+        <div className="relative overflow-hidden rounded-[1.65rem] bg-casio-card shadow-[0_18px_40px_rgba(0,0,0,0.45)] sm:rounded-[1.85rem] md:rounded-[2rem]">
+          <div className="relative aspect-[16/10] min-h-[13.5rem] sm:aspect-[16/9] sm:min-h-[18rem] md:aspect-[21/9] md:min-h-[20rem]">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={BANNER_IMAGE}
+              alt="Calculadora Casio ClassWiz sobre cuaderno con fórmulas"
+              className="hero-banner-image absolute inset-0 h-full w-full object-cover object-[78%_center] sm:object-[80%_center] md:object-right"
+              decoding="async"
+              fetchPriority="high"
+            />
 
-        <div className="hero-shade absolute inset-0 z-[1]" aria-hidden />
+            <div className="hero-shade absolute inset-0 z-[1]" aria-hidden />
 
-        <div className="absolute inset-0 z-10 flex flex-col justify-center px-4 pb-11 pt-4 sm:px-7 sm:pb-14 sm:pt-6 md:px-8 md:pb-16 lg:px-10">
-          <p className="text-[9px] font-bold tracking-[0.22em] text-casio-lime sm:text-[11px]">
-            CALIDAD Y PRECISIÓN
-          </p>
-          <p className="mt-1 font-serif text-[1.15rem] italic leading-none text-white sm:mt-2 sm:text-2xl md:text-[1.75rem]">
-            Calculadoras
-          </p>
-          <div className="mt-0.5">
-            <CasioMark size="hero" />
+            <div className="absolute inset-0 z-10 flex flex-col justify-center px-4 pb-11 pt-4 sm:px-7 sm:pb-14 sm:pt-6 md:px-8 md:pb-16 lg:px-10">
+              <p className="text-[9px] font-bold tracking-[0.22em] text-casio-lime sm:text-[11px]">
+                CALIDAD Y PRECISIÓN
+              </p>
+              <p className="mt-1 font-serif text-[1.15rem] italic leading-none text-white sm:mt-2 sm:text-2xl md:text-[1.75rem]">
+                Calculadoras
+              </p>
+              <div className="mt-0.5">
+                <CasioMark size="hero" />
+              </div>
+              <p className="mt-2 max-w-[11rem] text-[11px] leading-snug text-white/75 sm:mt-3 sm:max-w-[15rem] sm:text-[13px] md:max-w-[17rem] md:text-sm">
+                Rendimiento que te acompaña en cada cálculo
+              </p>
+              <a
+                href="#catalogo"
+                className="mt-3 inline-flex w-fit items-center gap-1 rounded-lg bg-casio-lime px-3.5 py-2 text-[11px] font-bold tracking-wide text-black hover:bg-casio-lime-bright sm:mt-5 sm:rounded-xl sm:px-5 sm:py-3 sm:text-sm"
+              >
+                VER CATÁLOGO
+                <span aria-hidden className="text-base leading-none">
+                  ›
+                </span>
+              </a>
+            </div>
+
+            {promo.visible && promo.show_offers_on_home !== false ? (
+              <div className="absolute bottom-2.5 left-2.5 z-20 sm:bottom-3 sm:left-3 md:bottom-4 md:left-4">
+                <Link
+                  href="/ofertas"
+                  className="hero-offer-frame flex w-max max-w-[min(17rem,calc(100vw-2rem))] items-stretch overflow-hidden rounded-[0.85rem] border border-white/12 bg-black/82 transition hover:border-casio-lime/50 sm:max-w-none"
+                  aria-label="Ver ofertas"
+                >
+                  <div className="flex shrink-0 items-center bg-casio-cream px-2.5 py-2 sm:px-3 sm:py-2.5">
+                    <span className="text-[10px] font-extrabold leading-none text-black sm:text-xs">
+                      {promo.badge_text}
+                    </span>
+                  </div>
+                  <div className="flex items-center px-2.5 py-2 sm:px-3">
+                    <div>
+                      <p className="text-[8px] font-bold uppercase leading-tight tracking-wide text-white sm:text-[10px]">
+                        {promo.title}
+                      </p>
+                      <p className="text-[7px] uppercase leading-tight tracking-wide text-white/65 sm:text-[9px]">
+                        {promo.subtitle}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex shrink-0 items-center pr-2.5 text-casio-lime sm:pr-3">
+                    <svg viewBox="0 0 24 24" className="h-4 w-4 sm:h-5 sm:w-5" fill="currentColor" aria-hidden>
+                      <path d="M21.41 11.58l-9-9C12.05 2.22 11.55 2 11 2H4c-1.1 0-2 .9-2 2v7c0 .55.22 1.05.59 1.42l9 9c.36.36.86.58 1.41.58s1.05-.22 1.41-.59l7-7c.37-.36.59-.86.59-1.41s-.23-1.06-.59-1.42zM5.5 7C4.67 7 4 6.33 4 5.5S4.67 4 5.5 4 7 4.67 7 5.5 6.33 7 5.5 7z" />
+                    </svg>
+                  </div>
+                </Link>
+              </div>
+            ) : null}
           </div>
-          <p className="mt-2 max-w-[11rem] text-[11px] leading-snug text-white/75 sm:mt-3 sm:max-w-[15rem] sm:text-[13px] md:max-w-[17rem] md:text-sm">
-            Rendimiento que te acompaña en cada cálculo
-          </p>
-          <a
-            href="#catalogo"
-            className="mt-3 inline-flex w-fit items-center gap-1 rounded-lg bg-casio-lime px-3.5 py-2 text-[11px] font-bold tracking-wide text-black hover:bg-casio-lime-bright sm:mt-5 sm:rounded-xl sm:px-5 sm:py-3 sm:text-sm"
-          >
-            VER CATÁLOGO
-            <span aria-hidden className="text-base leading-none">
-              ›
-            </span>
-          </a>
         </div>
 
-        {promo.visible && promo.show_offers_on_home !== false ? (
-          <div className="absolute bottom-2.5 right-2.5 z-20 sm:bottom-3 sm:right-3 md:bottom-4 md:right-4">
-            <Link
-              href="/ofertas"
-              className="hero-offer-frame flex w-max max-w-[min(17rem,calc(100vw-2rem))] items-stretch overflow-hidden rounded-[0.85rem] border border-white/12 bg-black/82 transition hover:border-casio-lime/50 sm:max-w-none"
-              aria-label="Ver ofertas"
-            >
-              <div className="flex shrink-0 items-center bg-casio-cream px-2.5 py-2 sm:px-3 sm:py-2.5">
-                <span className="text-[10px] font-extrabold leading-none text-black sm:text-xs">
-                  {promo.badge_text}
-                </span>
-              </div>
-              <div className="flex items-center px-2.5 py-2 sm:px-3">
-                <div>
-                  <p className="text-[8px] font-bold uppercase leading-tight tracking-wide text-white sm:text-[10px]">
-                    {promo.title}
-                  </p>
-                  <p className="text-[7px] uppercase leading-tight tracking-wide text-white/65 sm:text-[9px]">
-                    {promo.subtitle}
-                  </p>
-                </div>
-              </div>
-              <div className="flex shrink-0 items-center pr-2.5 text-casio-lime sm:pr-3">
-                <svg viewBox="0 0 24 24" className="h-4 w-4 sm:h-5 sm:w-5" fill="currentColor" aria-hidden>
-                  <path d="M21.41 11.58l-9-9C12.05 2.22 11.55 2 11 2H4c-1.1 0-2 .9-2 2v7c0 .55.22 1.05.59 1.42l9 9c.36.36.86.58 1.41.58s1.05-.22 1.41-.59l7-7c.37-.36.59-.86.59-1.41s-.23-1.06-.59-1.42zM5.5 7C4.67 7 4 6.33 4 5.5S4.67 4 5.5 4 7 4.67 7 5.5 6.33 7 5.5 7z" />
-                </svg>
-              </div>
-            </Link>
-          </div>
-        ) : null}
+        {/* Mitad dentro del banner, mitad por fuera (borde inferior derecho) */}
+        <div className="pointer-events-none absolute bottom-0 right-1 z-30 translate-y-1/2 sm:right-2 md:right-3">
+          <Image
+            src="/brand/sello-eduardo-vinolo.png"
+            alt="Eduardo Viñolo desde 1981"
+            width={160}
+            height={160}
+            className="h-auto w-[4.75rem] drop-shadow-[0_8px_18px_rgba(0,0,0,0.55)] sm:w-[5.75rem] md:w-[6.75rem]"
+            priority
+          />
+        </div>
       </div>
+      {/* Espacio para la mitad del sello que sobresale */}
+      <div className="h-10 sm:h-12 md:h-14" aria-hidden />
     </section>
   )
 }
@@ -200,14 +218,16 @@ export function CasioStorefront({
 
   const filteredProducts = useMemo(() => {
     const q = searchQuery.trim().toLocaleLowerCase('es')
-    return allProducts.filter((p) => {
-      if (activeCategory && p.category_id !== activeCategory.id) return false
-      if (!q) return true
-      const name = p.name.toLocaleLowerCase('es')
-      const desc = (p.description ?? '').toLocaleLowerCase('es')
-      const cat = (categoryById(p.category_id) ?? '').toLocaleLowerCase('es')
-      return name.includes(q) || desc.includes(q) || cat.includes(q)
-    })
+    return allProducts
+      .filter((p) => {
+        if (activeCategory && p.category_id !== activeCategory.id) return false
+        if (!q) return true
+        const name = p.name.toLocaleLowerCase('es')
+        const desc = (p.description ?? '').toLocaleLowerCase('es')
+        const cat = (categoryById(p.category_id) ?? '').toLocaleLowerCase('es')
+        return name.includes(q) || desc.includes(q) || cat.includes(q)
+      })
+      .sort(compareByName)
   }, [allProducts, activeCategory, searchQuery, categoryById])
 
   const visibleProducts = useMemo(
@@ -300,11 +320,8 @@ export function CasioStorefront({
 
       <div className="px-3 pt-2 sm:px-6 sm:pt-3 lg:px-8">
         <HeroBanner promo={heroPromo} />
-        <div className="mt-4 text-center sm:mt-5">
-          <p className="font-casio text-[0.95rem] leading-snug tracking-[0.14em] text-casio-lime sm:text-lg sm:tracking-[0.16em] md:text-xl md:tracking-[0.18em]">
-            Eduardo Viñolo
-          </p>
-          <p className="mt-1 font-casio text-[0.8rem] leading-snug tracking-[0.12em] text-casio-lime/85 sm:mt-1.5 sm:text-base sm:tracking-[0.14em] md:text-lg md:tracking-[0.16em]">
+        <div className="mt-3 text-center sm:mt-4">
+          <p className="font-casio text-[0.8rem] leading-snug tracking-[0.12em] text-casio-lime/85 sm:text-[0.95rem] sm:tracking-[0.14em]">
             marcando la diferencia desde 1981
           </p>
         </div>
@@ -351,19 +368,19 @@ export function CasioStorefront({
                   selected ? 'border-casio-lime/70 bg-casio-card' : 'border-white/10 bg-casio-card hover:border-casio-lime/40'
                 }`}
               >
-                <div className="relative flex h-[5.5rem] items-end justify-center overflow-hidden bg-[#0d0d0d] px-2 pt-3 md:h-[7rem]">
+                <div className="relative flex h-[5.5rem] items-end justify-center overflow-hidden bg-white px-2 pt-3 md:h-[7rem]">
                   {imgUrl ? (
                     <Image
                       src={imgUrl}
                       alt=""
                       width={90}
                       height={90}
-                      className="h-[4.5rem] w-auto object-contain drop-shadow-lg md:h-[5.5rem]"
+                      className="h-[4.5rem] w-auto object-contain md:h-[5.5rem]"
                       unoptimized
                     />
                   ) : (
                     <div className="flex h-full w-full items-center justify-center pb-2">
-                      <CasioMark size="sm" className="opacity-30" />
+                      <CasioMark size="sm" className="!text-neutral-300 opacity-80" />
                     </div>
                   )}
                   <span className="absolute right-1.5 top-1.5 rounded-md bg-casio-cream px-1.5 py-0.5 text-[10px] font-extrabold text-black">
@@ -452,7 +469,7 @@ export function CasioStorefront({
                     <button
                       type="button"
                       onClick={() => setDetail(p)}
-                      className="relative flex aspect-[4/5] w-full items-end justify-center bg-[#0a0a0a] px-3 pt-4 text-left"
+                      className="relative flex aspect-[4/5] w-full items-end justify-center bg-white px-3 pt-4 text-left"
                       aria-label={`Ver detalle de ${p.name}`}
                     >
                       {imgUrl ? (
@@ -461,12 +478,12 @@ export function CasioStorefront({
                           alt={p.name}
                           width={140}
                           height={140}
-                          className="max-h-[85%] w-auto object-contain drop-shadow-md"
+                          className="max-h-[85%] w-auto object-contain"
                           unoptimized
                         />
                       ) : (
                         <div className="flex h-full items-center justify-center">
-                          <CasioMark size="sm" className="opacity-20" />
+                          <CasioMark size="sm" className="!text-neutral-300 opacity-80" />
                         </div>
                       )}
                       {p.stock < 1 ? (
@@ -475,20 +492,15 @@ export function CasioStorefront({
                         </span>
                       ) : null}
                     </button>
-                    <div className="border-t border-white/5 p-3 sm:p-4">
-                      <h4 className="line-clamp-2 text-xs font-semibold leading-snug sm:text-sm">{p.name}</h4>
-                      <p className="mt-2 text-sm font-bold text-casio-lime sm:text-base">{formatMoneyArs(p.price)}</p>
-                      {p.stock < 1 ? (
-                        <p className="mt-1 text-[11px] font-medium text-casio-muted">Sin stock</p>
-                      ) : null}
-                      <AddToCartButton
-                        productId={p.id}
-                        name={p.name}
-                        unitPrice={p.price}
-                        imagePath={p.image_path}
-                        categoryName={catName}
-                      />
-                    </div>
+                    <ProductCardInfo
+                      productId={p.id}
+                      name={p.name}
+                      description={p.description}
+                      unitPrice={p.price}
+                      imagePath={p.image_path}
+                      categoryName={catName}
+                      stock={p.stock}
+                    />
                   </article>
                 )
               })}

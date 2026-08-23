@@ -398,7 +398,7 @@ export function AdminMarketingPanel({
                     }`}
                   >
                     <input type="checkbox" checked={checked} onChange={() => toggleOffer(p.id)} />
-                    <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-black/40">
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-white">
                       {img ? (
                         <Image src={img} alt="" width={40} height={40} className="object-contain" unoptimized />
                       ) : (
@@ -539,7 +539,7 @@ export function AdminMarketingPanel({
                     }`}
                   >
                     <input type="checkbox" checked={checked} onChange={() => toggleFeatured(p.id)} />
-                    <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-black/40">
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-white">
                       {img ? (
                         <Image src={img} alt="" width={40} height={40} className="object-contain" unoptimized />
                       ) : (

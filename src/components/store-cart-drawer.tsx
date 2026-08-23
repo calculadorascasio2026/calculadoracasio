@@ -107,10 +107,10 @@ export function StoreCartDrawer({ supabaseUrl, whatsappE164 }: Props) {
                       <img
                         src={thumb}
                         alt=""
-                        className="h-16 w-16 shrink-0 rounded-lg object-contain bg-black"
+                        className="h-16 w-16 shrink-0 rounded-lg object-contain bg-white"
                       />
                     ) : (
-                      <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-lg bg-black text-[9px] text-casio-muted">
+                      <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-lg bg-white text-[9px] text-neutral-400">
                         sin foto
                       </div>
                     )}

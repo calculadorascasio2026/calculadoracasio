@@ -8,7 +8,7 @@ export default async function AdminProductsPage() {
 
   const [catRes, prodRes] = await Promise.all([
     supabase.from('categories').select('*').order('sort_order'),
-    supabase.from('products').select('*').order('sort_order').order('name'),
+    supabase.from('products').select('*').order('name'),
   ])
 
   const categories = (catRes.data ?? []) as CategoryRow[]

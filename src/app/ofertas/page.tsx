@@ -1,4 +1,5 @@
 import { PublicCatalogPage } from '@/components/public-catalog-page'
+import { compareByName } from '@/lib/sort-catalog'
 import { createClient } from '@/lib/supabase/server'
 import type { ProductRow } from '@/types/catalog'
 
@@ -38,6 +39,7 @@ export default async function OfertasPage() {
         updated_at: String(row.updated_at),
         discount_percent: discountById.get(String(row.id)) ?? 0,
       }))
+      products.sort(compareByName)
     }
   } catch {
     /* sin env */

@@ -10,7 +10,7 @@ export default async function AdminMarketingPage() {
     (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000')
 
   const [prodRes, offerRes, featRes, promoRes] = await Promise.all([
-    supabase.from('products').select('*').order('sort_order').order('name'),
+    supabase.from('products').select('*').order('name'),
     supabase.from('product_offers').select('product_id, discount_percent, active'),
     supabase.from('featured_products').select('product_id, sort_order, active').order('sort_order'),
     supabase.from('hero_promo').select('badge_text, title, subtitle, visible, show_featured_on_home, show_offers_on_home').eq('id', 1).maybeSingle(),
