@@ -1,6 +1,7 @@
 'use client'
 
 import { AddToCartButton } from '@/components/add-to-cart-button'
+import { usePriceVisibility } from '@/context/price-visibility-context'
 import { formatMoneyArs } from '@/lib/format'
 import { useState } from 'react'
 
@@ -29,23 +30,28 @@ export function ProductCardInfo({
   addLabel = 'Agregar',
   titleTag: Title = 'h4',
 }: Props) {
+  const { showPrices } = usePriceVisibility()
   const [detailsOpen, setDetailsOpen] = useState(false)
   const text = description?.trim() ?? ''
   const hasDescription = text.length > 0
   const hasOffer =
-    typeof originalPrice === 'number' && originalPrice > unitPrice
+    showPrices && typeof originalPrice === 'number' && originalPrice > unitPrice
 
   return (
     <div className="border-t border-white/5 p-3 sm:p-4">
       <Title className="line-clamp-2 text-xs font-semibold leading-snug sm:text-sm">{name}</Title>
       <div className="mt-2 flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
-        {hasOffer ? (
-          <>
-            <span className="text-[11px] text-casio-muted line-through">{formatMoneyArs(originalPrice)}</span>
+        {showPrices ? (
+          hasOffer ? (
+            <>
+              <span className="text-[11px] text-casio-muted line-through">{formatMoneyArs(originalPrice)}</span>
+              <span className="text-sm font-bold text-casio-lime sm:text-base">{formatMoneyArs(unitPrice)}</span>
+            </>
+          ) : (
             <span className="text-sm font-bold text-casio-lime sm:text-base">{formatMoneyArs(unitPrice)}</span>
-          </>
+          )
         ) : (
-          <span className="text-sm font-bold text-casio-lime sm:text-base">{formatMoneyArs(unitPrice)}</span>
+          <span className="text-[11px] font-medium text-casio-muted sm:text-xs">Consultar precio</span>
         )}
         {hasDescription ? (
           <>

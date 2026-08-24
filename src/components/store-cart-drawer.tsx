@@ -1,6 +1,7 @@
 'use client'
 
 import { useCart } from '@/context/cart-context'
+import { usePriceVisibility } from '@/context/price-visibility-context'
 import { appBaseUrl } from '@/lib/app-url'
 import { formatMoneyArs } from '@/lib/format'
 import { productImagePublicUrl } from '@/lib/image-url'
@@ -19,6 +20,7 @@ type Props = {
 export function StoreCartDrawer({ supabaseUrl, whatsappE164 }: Props) {
   const { lines, itemCount, subtotal, drawerOpen, closeDrawer, setQuantity, removeLine, clearCart } =
     useCart()
+  const { showPrices } = usePriceVisibility()
   const [sending, setSending] = useState(false)
 
   useEffect(() => {
@@ -49,7 +51,7 @@ export function StoreCartDrawer({ supabaseUrl, whatsappE164 }: Props) {
       if (!res.ok || !js.id) throw new Error(js.error ?? 'Error')
 
       const orderUrl = `${appBaseUrl()}/p/${js.id}`
-      const msg = buildOrderWhatsAppMessage(lines, subtotal, orderUrl)
+      const msg = buildOrderWhatsAppMessage(lines, subtotal, orderUrl, { showPrices })
       const url = whatsappOrderUrl(whatsappE164!, msg)
       clearCart()
       closeDrawer()
@@ -121,9 +123,13 @@ export function StoreCartDrawer({ supabaseUrl, whatsappE164 }: Props) {
                           {l.categoryName}
                         </p>
                       ) : null}
-                      <p className="mt-1 text-sm font-bold text-casio-lime">
-                        {formatMoneyArs(l.unitPrice * l.quantity)}
-                      </p>
+                      {showPrices ? (
+                        <p className="mt-1 text-sm font-bold text-casio-lime">
+                          {formatMoneyArs(l.unitPrice * l.quantity)}
+                        </p>
+                      ) : (
+                        <p className="mt-1 text-xs font-medium text-casio-muted">Consultar precio</p>
+                      )}
                       <div className="mt-2 flex items-center gap-2">
                         <button
                           type="button"
@@ -159,17 +165,23 @@ export function StoreCartDrawer({ supabaseUrl, whatsappE164 }: Props) {
         </div>
 
         <div className="shrink-0 border-t border-white/10 px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-4">
-          <div className="mb-3 flex items-center justify-between text-sm">
-            <span className="text-casio-muted">Total estimado</span>
-            <span className="font-bold text-casio-lime">{formatMoneyArs(subtotal)}</span>
-          </div>
+          {showPrices ? (
+            <div className="mb-3 flex items-center justify-between text-sm">
+              <span className="text-casio-muted">Total estimado</span>
+              <span className="font-bold text-casio-lime">{formatMoneyArs(subtotal)}</span>
+            </div>
+          ) : (
+            <p className="mb-3 text-xs text-casio-muted">
+              Los precios se consultan por WhatsApp.
+            </p>
+          )}
           <button
             type="button"
             disabled={lines.length === 0 || sending}
             onClick={() => void handlePedir()}
             className="w-full rounded-xl bg-casio-lime px-4 py-3 text-sm font-bold text-black transition hover:bg-casio-lime-bright disabled:cursor-not-allowed disabled:opacity-40"
           >
-            {sending ? 'Preparando…' : 'Pedir por WhatsApp'}
+            {sending ? 'Preparando…' : showPrices ? 'Pedir por WhatsApp' : 'Consultar por WhatsApp'}
           </button>
         </div>
       </aside>

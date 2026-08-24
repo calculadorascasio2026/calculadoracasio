@@ -4,6 +4,7 @@ import { CartHeaderButton } from '@/components/cart-header-button'
 import { CasioMark } from '@/components/casio-mark'
 import { ProductCardInfo } from '@/components/product-card-info'
 import { ProductDetailModal } from '@/components/product-detail-modal'
+import { usePriceVisibility } from '@/context/price-visibility-context'
 import { productImagePublicUrl } from '@/lib/image-url'
 import type { ProductRow } from '@/types/catalog'
 import Image from 'next/image'
@@ -24,6 +25,7 @@ type Props = {
 
 export function PublicCatalogPage({ title, subtitle, products, supabaseUrl, emptyMessage }: Props) {
   const [detail, setDetail] = useState<PublicProductCard | null>(null)
+  const { showPrices, toggleShowPrices } = usePriceVisibility()
   const detailDiscount = Number(detail?.discount_percent ?? 0)
   const detailHasOffer = detailDiscount > 0
   const detailFinal = detail
@@ -45,7 +47,21 @@ export function PublicCatalogPage({ title, subtitle, products, supabaseUrl, empt
           </div>
         </div>
         <h1 className="mt-4 font-casio text-3xl tracking-[0.12em] text-casio-lime sm:text-4xl">{title}</h1>
-        <p className="mt-1 text-sm text-casio-muted">{subtitle}</p>
+        <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
+          <p className="text-sm text-casio-muted">{subtitle}</p>
+          <button
+            type="button"
+            onClick={toggleShowPrices}
+            className={`rounded-full px-3 py-1.5 text-[11px] font-semibold transition sm:text-xs ${
+              showPrices
+                ? 'border border-casio-lime/50 bg-casio-lime/15 text-casio-lime'
+                : 'border border-white/15 text-casio-muted hover:border-casio-lime/40 hover:text-casio-lime'
+            }`}
+            aria-pressed={showPrices}
+          >
+            {showPrices ? 'Ocultar precios' : 'Mostrar precios'}
+          </button>
+        </div>
       </header>
 
       <main className="px-4 pt-6 sm:px-6 lg:px-8">
@@ -84,7 +100,7 @@ export function PublicCatalogPage({ title, subtitle, products, supabaseUrl, empt
                     ) : (
                       <CasioMark size="sm" className="!text-neutral-300 opacity-80" />
                     )}
-                    {hasOffer ? (
+                    {hasOffer && showPrices ? (
                       <span className="absolute left-2 top-2 rounded-md bg-casio-lime px-2 py-1 text-[10px] font-extrabold text-black">
                         -{Math.round(discount)}%
                       </span>

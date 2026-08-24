@@ -3,6 +3,7 @@
 import { AddToCartButton } from '@/components/add-to-cart-button'
 import { CasioMark } from '@/components/casio-mark'
 import { ProductDetailModal } from '@/components/product-detail-modal'
+import { usePriceVisibility } from '@/context/price-visibility-context'
 import { formatMoneyArs } from '@/lib/format'
 import { productImagePublicUrl } from '@/lib/image-url'
 import type { ProductRow } from '@/types/catalog'
@@ -43,6 +44,7 @@ export function FeaturedProductsCarousel({ products, supabaseUrl }: Props) {
   const [inView, setInView] = useState(true)
   const [reduceMotion, setReduceMotion] = useState(false)
   const [detail, setDetail] = useState<ProductRow | null>(null)
+  const { showPrices } = usePriceVisibility()
   const rootRef = useRef<HTMLDivElement>(null)
   const trackRef = useRef<HTMLDivElement>(null)
   const slideRefs = useRef<(HTMLDivElement | null)[]>([])
@@ -252,9 +254,13 @@ export function FeaturedProductsCarousel({ products, supabaseUrl }: Props) {
                       className="w-full text-left"
                     >
                       <h3 className="line-clamp-2 text-[11px] font-semibold leading-snug sm:text-xs">{product.name}</h3>
-                      <p className="mt-1.5 text-xs font-bold text-casio-lime sm:text-sm">
-                        {formatMoneyArs(product.price)}
-                      </p>
+                      {showPrices ? (
+                        <p className="mt-1.5 text-xs font-bold text-casio-lime sm:text-sm">
+                          {formatMoneyArs(product.price)}
+                        </p>
+                      ) : (
+                        <p className="mt-1.5 text-[11px] font-medium text-casio-muted">Consultar precio</p>
+                      )}
                     </button>
                     <AddToCartButton
                       productId={product.id}

@@ -2,6 +2,7 @@
 
 import { AddToCartButton } from '@/components/add-to-cart-button'
 import { CasioMark } from '@/components/casio-mark'
+import { usePriceVisibility } from '@/context/price-visibility-context'
 import { formatMoneyArs } from '@/lib/format'
 import { productImagePublicUrl } from '@/lib/image-url'
 import type { ProductRow } from '@/types/catalog'
@@ -27,9 +28,11 @@ export function ProductDetailModal({
   discountPercent,
   onClose,
 }: Props) {
+  const { showPrices } = usePriceVisibility()
   const imgUrl = productImagePublicUrl(supabaseUrl, product.image_path)
   const price = unitPrice ?? product.price
   const hasOffer =
+    showPrices &&
     typeof discountPercent === 'number' &&
     discountPercent > 0 &&
     typeof originalPrice === 'number' &&
@@ -105,13 +108,17 @@ export function ProductDetailModal({
               {product.name}
             </h2>
             <div className="mt-2">
-              {hasOffer ? (
-                <div className="flex flex-wrap items-baseline gap-x-2">
-                  <span className="text-sm text-casio-muted line-through">{formatMoneyArs(originalPrice!)}</span>
+              {showPrices ? (
+                hasOffer ? (
+                  <div className="flex flex-wrap items-baseline gap-x-2">
+                    <span className="text-sm text-casio-muted line-through">{formatMoneyArs(originalPrice!)}</span>
+                    <span className="text-xl font-bold text-casio-lime sm:text-2xl">{formatMoneyArs(price)}</span>
+                  </div>
+                ) : (
                   <span className="text-xl font-bold text-casio-lime sm:text-2xl">{formatMoneyArs(price)}</span>
-                </div>
+                )
               ) : (
-                <span className="text-xl font-bold text-casio-lime sm:text-2xl">{formatMoneyArs(price)}</span>
+                <span className="text-sm font-medium text-casio-muted">Consultar precio</span>
               )}
             </div>
           </div>

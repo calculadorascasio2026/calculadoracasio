@@ -5,6 +5,7 @@ import { CasioMark } from '@/components/casio-mark'
 import { FeaturedProductsCarousel } from '@/components/featured-products-carousel'
 import { ProductCardInfo } from '@/components/product-card-info'
 import { ProductDetailModal } from '@/components/product-detail-modal'
+import { usePriceVisibility } from '@/context/price-visibility-context'
 import type { CategorySummary } from '@/lib/fetch-products'
 import { compareByName } from '@/lib/sort-catalog'
 import { productImagePublicUrl } from '@/lib/image-url'
@@ -184,6 +185,7 @@ export function CasioStorefront({
   const [error, setError] = useState<string | null>(null)
   const [detail, setDetail] = useState<ProductRow | null>(null)
   const catalogRef = useRef<HTMLElement>(null)
+  const { showPrices, toggleShowPrices } = usePriceVisibility()
 
   const categoryById = useCallback(
     (id: string) => categories.find((c) => c.id === id)?.name ?? null,
@@ -343,15 +345,29 @@ export function CasioStorefront({
       ) : null}
 
       <section className="mt-7 px-4 sm:px-6 lg:px-8">
-        <div className="mb-3 flex items-center justify-between">
+        <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
           <h2 className="font-casio text-xl tracking-[0.12em] text-casio-lime md:text-2xl">CATEGORÍAS</h2>
-          <button
-            type="button"
-            onClick={() => selectCategory(null)}
-            className="text-[11px] font-semibold text-casio-lime hover:underline sm:text-xs"
-          >
-            VER TODO ›
-          </button>
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={toggleShowPrices}
+              className={`rounded-full px-3 py-1.5 text-[11px] font-semibold transition sm:text-xs ${
+                showPrices
+                  ? 'border border-casio-lime/50 bg-casio-lime/15 text-casio-lime'
+                  : 'border border-white/15 text-casio-muted hover:border-casio-lime/40 hover:text-casio-lime'
+              }`}
+              aria-pressed={showPrices}
+            >
+              {showPrices ? 'Ocultar precios' : 'Mostrar precios'}
+            </button>
+            <button
+              type="button"
+              onClick={() => selectCategory(null)}
+              className="text-[11px] font-semibold text-casio-lime hover:underline sm:text-xs"
+            >
+              VER TODO ›
+            </button>
+          </div>
         </div>
 
         <div className="scrollbar-none -mx-4 flex gap-3 overflow-x-auto px-4 pb-1 md:mx-0 md:grid md:grid-cols-3 md:gap-4 md:overflow-visible md:px-0">
