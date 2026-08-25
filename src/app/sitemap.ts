@@ -15,10 +15,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   try {
     const supabase = await createClient()
-    const { data } = await supabase.from('categories').select('slug, updated_at').order('sort_order')
+    const { data } = await supabase.from('categories').select('slug, created_at').order('sort_order')
     const categoryRoutes: MetadataRoute.Sitemap = (data ?? []).map((cat) => ({
       url: `${base}/catalogo/${String(cat.slug)}`,
-      lastModified: cat.updated_at ? new Date(String(cat.updated_at)) : undefined,
+      lastModified: cat.created_at ? new Date(String(cat.created_at)) : undefined,
       changeFrequency: 'weekly',
       priority: 0.7,
     }))

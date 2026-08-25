@@ -108,24 +108,24 @@ export function CatalogPage({
     [activeCategorySlug, categories],
   )
 
-  const filterProducts = (list: ProductRow[]) => {
-    const q = searchQuery.trim().toLocaleLowerCase('es')
-    if (!q) return list
-    return list.filter((p) => {
-      const name = p.name.toLocaleLowerCase('es')
-      const desc = (p.description ?? '').toLocaleLowerCase('es')
-      const cat = (categoryById(p.category_id) ?? '').toLocaleLowerCase('es')
-      return name.includes(q) || desc.includes(q) || cat.includes(q)
-    })
-  }
-
   const visibleCategories = useMemo(() => {
+    const q = searchQuery.trim().toLocaleLowerCase('es')
+    const filterList = (list: ProductRow[]) => {
+      if (!q) return list
+      return list.filter((p) => {
+        const name = p.name.toLocaleLowerCase('es')
+        const desc = (p.description ?? '').toLocaleLowerCase('es')
+        const cat = (categoryById(p.category_id) ?? '').toLocaleLowerCase('es')
+        return name.includes(q) || desc.includes(q) || cat.includes(q)
+      })
+    }
+
     if (activeCategory) {
-      return [{ ...activeCategory, products: filterProducts(activeCategory.products) }]
+      return [{ ...activeCategory, products: filterList(activeCategory.products) }]
     }
     return categories
-      .map((c) => ({ ...c, products: filterProducts(c.products) }))
-      .filter((c) => c.products.length > 0 || !searchQuery.trim())
+      .map((c) => ({ ...c, products: filterList(c.products) }))
+      .filter((c) => c.products.length > 0 || !q)
   }, [activeCategory, categories, searchQuery, categoryById])
 
   const totalProducts = visibleCategories.reduce((n, c) => n + c.products.length, 0)

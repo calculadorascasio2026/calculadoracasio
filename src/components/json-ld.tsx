@@ -8,7 +8,6 @@ export function JsonLd({ data }: Props) {
     <>
       {payload.map((item, i) => (
         <script
-          // eslint-disable-next-line react/no-danger
           dangerouslySetInnerHTML={{ __html: JSON.stringify(item) }}
           key={i}
           type="application/ld+json"
