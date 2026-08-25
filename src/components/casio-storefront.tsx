@@ -95,24 +95,24 @@ function HeroBanner({ promo }: { promo: HeroPromo }) {
               <p className="text-[9px] font-bold tracking-[0.22em] text-casio-lime sm:text-[11px]">
                 CALIDAD Y PRECISIÓN
               </p>
-              <p className="mt-1 font-serif text-[1.15rem] italic leading-none text-white sm:mt-2 sm:text-2xl md:text-[1.75rem]">
+              <h1 className="mt-1 font-serif text-[1.15rem] italic leading-none text-white sm:mt-2 sm:text-2xl md:text-[1.75rem]">
                 Calculadoras
-              </p>
+              </h1>
               <div className="mt-0.5">
                 <CasioMark size="hero" />
               </div>
               <p className="mt-2 max-w-[11rem] text-[11px] leading-snug text-white/75 sm:mt-3 sm:max-w-[15rem] sm:text-[13px] md:max-w-[17rem] md:text-sm">
                 Rendimiento que te acompaña en cada cálculo
               </p>
-              <a
-                href="#catalogo"
+              <Link
+                href="/catalogo"
                 className="mt-3 inline-flex w-fit items-center gap-1 rounded-lg bg-casio-lime px-3.5 py-2 text-[11px] font-bold tracking-wide text-black hover:bg-casio-lime-bright sm:mt-5 sm:rounded-xl sm:px-5 sm:py-3 sm:text-sm"
               >
                 VER CATÁLOGO
                 <span aria-hidden className="text-base leading-none">
                   ›
                 </span>
-              </a>
+              </Link>
             </div>
 
             {promo.visible && promo.show_offers_on_home !== false ? (
@@ -556,7 +556,7 @@ export function CasioStorefront({
           <p className="mt-1 text-xs text-casio-muted">Calculadoras · Calidad y precisión desde 1981</p>
 
           <div className="mt-5 flex flex-wrap gap-x-4 gap-y-2 text-[11px] text-casio-muted">
-            <Link href="/#catalogo" className="hover:text-casio-lime">
+            <Link href="/catalogo" className="hover:text-casio-lime">
               Catálogo
             </Link>
             <Link href="/ofertas" className="hover:text-casio-lime">

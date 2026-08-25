@@ -1,8 +1,17 @@
 import { CasioStorefront } from '@/components/casio-storefront'
+import { JsonLd } from '@/components/json-ld'
 import { fetchFeaturedProducts } from '@/lib/fetch-featured'
 import { fetchCategorySummaries } from '@/lib/fetch-products'
+import { localBusinessJsonLd, pageMetadata, websiteJsonLd } from '@/lib/seo'
 import { createClient } from '@/lib/supabase/server'
 import { DEFAULT_HERO_PROMO, type HeroPromo, type ProductRow } from '@/types/catalog'
+import type { Metadata } from 'next'
+
+export const metadata: Metadata = pageMetadata({
+  description:
+    'Calculadoras Casio en Mendoza. ClassWiz, científicas y más. Eduardo Viñolo — calidad y precisión desde 1981.',
+  path: '/',
+})
 
 export default async function HomePage() {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? ''
@@ -45,6 +54,7 @@ export default async function HomePage() {
 
   return (
     <main>
+      <JsonLd data={[websiteJsonLd(), localBusinessJsonLd()]} />
       <CasioStorefront
         categories={categories}
         featuredProducts={featuredProducts}

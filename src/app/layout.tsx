@@ -1,3 +1,4 @@
+import { DEFAULT_DESCRIPTION, SITE_NAME, SITE_TITLE, siteUrl } from '@/lib/seo'
 import type { Metadata } from 'next'
 import { Bebas_Neue, DM_Sans, Michroma, Playfair_Display } from 'next/font/google'
 import { AppProviders } from './providers'
@@ -28,8 +29,30 @@ const playfair = Playfair_Display({
 })
 
 export const metadata: Metadata = {
-  title: 'Viñolo Casio — Calculadoras',
-  description: 'Catálogo de calculadoras Casio. Calidad y precisión.',
+  metadataBase: new URL(siteUrl()),
+  title: {
+    default: `${SITE_TITLE} | ${SITE_NAME}`,
+    template: `%s | ${SITE_NAME}`,
+  },
+  description: DEFAULT_DESCRIPTION,
+  icons: {
+    icon: '/brand/logo.jpeg',
+    apple: '/brand/logo.jpeg',
+  },
+  openGraph: {
+    type: 'website',
+    locale: 'es_AR',
+    siteName: SITE_NAME,
+    title: `${SITE_TITLE} | ${SITE_NAME}`,
+    description: DEFAULT_DESCRIPTION,
+    images: [{ url: '/brand/banner4k.png', width: 1200, height: 630, alt: SITE_NAME }],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: `${SITE_TITLE} | ${SITE_NAME}`,
+    description: DEFAULT_DESCRIPTION,
+    images: ['/brand/banner4k.png'],
+  },
 }
 
 export default function RootLayout({

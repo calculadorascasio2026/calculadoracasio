@@ -3,9 +3,16 @@ import { appBaseUrl } from '@/lib/app-url'
 import { formatDateTimeAr, formatMoneyArs } from '@/lib/format'
 import { productImagePublicUrl } from '@/lib/image-url'
 import type { OrderItem } from '@/lib/order-items'
+import { pageMetadata } from '@/lib/seo'
 import { createClient } from '@/lib/supabase/server'
+import type { Metadata } from 'next'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
+
+export const metadata: Metadata = pageMetadata({
+  title: 'Pedido',
+  noIndex: true,
+})
 
 type OrderRow = {
   id: string

@@ -1,9 +1,17 @@
 import { PublicCatalogPage } from '@/components/public-catalog-page'
 import { compareByName } from '@/lib/sort-catalog'
+import { pageMetadata } from '@/lib/seo'
 import { createClient } from '@/lib/supabase/server'
 import type { ProductRow } from '@/types/catalog'
+import type { Metadata } from 'next'
 
 export const dynamic = 'force-dynamic'
+
+export const metadata: Metadata = pageMetadata({
+  title: 'Ofertas en calculadoras Casio',
+  description: 'Descuentos y ofertas en calculadoras Casio. Eduardo Viñolo, Mendoza.',
+  path: '/ofertas',
+})
 
 export default async function OfertasPage() {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? ''
