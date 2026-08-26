@@ -1,5 +1,7 @@
 'use client'
 
+import { DescriptionRichEditor } from '@/components/description-rich-editor'
+import { autoFormatDescriptionHtml, looksLikeHtml, stripHtml } from '@/lib/description-html'
 import Image from 'next/image'
 import { useMemo, useRef, useState } from 'react'
 import { compareByName } from '@/lib/sort-catalog'
@@ -276,10 +278,18 @@ export function AdminProductsPanel({ categories: initialCategories, initialProdu
       return
     }
 
+    const rawDescription = draft.description.trim()
+    const plainDesc = stripHtml(rawDescription)
+    const description = !plainDesc
+      ? null
+      : !looksLikeHtml(rawDescription) && /:\s*.+/m.test(rawDescription)
+        ? autoFormatDescriptionHtml(rawDescription)
+        : rawDescription
+
     const payload = {
       category_id: draft.category_id,
       name: draft.name.trim(),
-      description: draft.description.trim() || null,
+      description,
       price,
       active: draft.active,
       stock,
@@ -516,11 +526,10 @@ export function AdminProductsPanel({ categories: initialCategories, initialProdu
             </div>
             <div className="sm:col-span-2">
               <label className="text-xs text-casio-muted">Descripción</label>
-              <textarea
-                rows={3}
-                className="mt-1 w-full rounded-lg border border-white/10 bg-black/40 px-3 py-2 text-sm"
+              <DescriptionRichEditor
                 value={draft.description}
-                onChange={(e) => setDraft({ ...draft, description: e.target.value })}
+                onChange={(html) => setDraft({ ...draft, description: html })}
+                disabled={saving}
               />
             </div>
 

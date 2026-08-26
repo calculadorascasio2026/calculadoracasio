@@ -5,6 +5,7 @@ import { CasioMark } from '@/components/casio-mark'
 import { ProductCardInfo } from '@/components/product-card-info'
 import { ProductDetailModal } from '@/components/product-detail-modal'
 import { usePriceVisibility } from '@/context/price-visibility-context'
+import { stripHtml } from '@/lib/description-html'
 import { productImagePublicUrl } from '@/lib/image-url'
 import type { CategoryRow, ProductRow } from '@/types/catalog'
 import Image from 'next/image'
@@ -114,7 +115,7 @@ export function CatalogPage({
       if (!q) return list
       return list.filter((p) => {
         const name = p.name.toLocaleLowerCase('es')
-        const desc = (p.description ?? '').toLocaleLowerCase('es')
+        const desc = stripHtml(p.description ?? '').toLocaleLowerCase('es')
         const cat = (categoryById(p.category_id) ?? '').toLocaleLowerCase('es')
         return name.includes(q) || desc.includes(q) || cat.includes(q)
       })

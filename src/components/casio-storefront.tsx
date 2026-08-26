@@ -6,6 +6,7 @@ import { FeaturedProductsCarousel } from '@/components/featured-products-carouse
 import { ProductCardInfo } from '@/components/product-card-info'
 import { ProductDetailModal } from '@/components/product-detail-modal'
 import { usePriceVisibility } from '@/context/price-visibility-context'
+import { stripHtml } from '@/lib/description-html'
 import type { CategorySummary } from '@/lib/fetch-products'
 import { compareByName } from '@/lib/sort-catalog'
 import { productImagePublicUrl } from '@/lib/image-url'
@@ -225,7 +226,7 @@ export function CasioStorefront({
         if (activeCategory && p.category_id !== activeCategory.id) return false
         if (!q) return true
         const name = p.name.toLocaleLowerCase('es')
-        const desc = (p.description ?? '').toLocaleLowerCase('es')
+        const desc = stripHtml(p.description ?? '').toLocaleLowerCase('es')
         const cat = (categoryById(p.category_id) ?? '').toLocaleLowerCase('es')
         return name.includes(q) || desc.includes(q) || cat.includes(q)
       })

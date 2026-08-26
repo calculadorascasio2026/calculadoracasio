@@ -1,7 +1,9 @@
 'use client'
 
 import { AddToCartButton } from '@/components/add-to-cart-button'
+import { ProductDescription } from '@/components/product-description'
 import { usePriceVisibility } from '@/context/price-visibility-context'
+import { stripHtml } from '@/lib/description-html'
 import { formatMoneyArs } from '@/lib/format'
 import { useState } from 'react'
 
@@ -33,7 +35,7 @@ export function ProductCardInfo({
   const { showPrices } = usePriceVisibility()
   const [detailsOpen, setDetailsOpen] = useState(false)
   const text = description?.trim() ?? ''
-  const hasDescription = text.length > 0
+  const hasDescription = stripHtml(text).length > 0
   const hasOffer =
     showPrices && typeof originalPrice === 'number' && originalPrice > unitPrice
 
@@ -70,9 +72,10 @@ export function ProductCardInfo({
         ) : null}
       </div>
       {detailsOpen ? (
-        <p className="mt-2 whitespace-pre-wrap text-[11px] leading-relaxed text-casio-muted sm:text-xs">
-          {text}
-        </p>
+        <ProductDescription
+          description={text}
+          className="mt-2 text-[11px] text-casio-muted sm:text-xs"
+        />
       ) : null}
       {typeof stock === 'number' && stock < 1 ? (
         <p className="mt-1 text-[11px] font-medium text-casio-muted">Sin stock</p>
