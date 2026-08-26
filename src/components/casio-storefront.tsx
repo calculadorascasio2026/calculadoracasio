@@ -9,6 +9,7 @@ import { usePriceVisibility } from '@/context/price-visibility-context'
 import { stripHtml } from '@/lib/description-html'
 import type { CategorySummary } from '@/lib/fetch-products'
 import { compareByName } from '@/lib/sort-catalog'
+import { STORE_ADDRESS_LINE, STORE_MAPS_URL } from '@/lib/store-location'
 import { productImagePublicUrl } from '@/lib/image-url'
 import type { HeroPromo, ProductRow } from '@/types/catalog'
 import { DEFAULT_HERO_PROMO } from '@/types/catalog'
@@ -297,6 +298,12 @@ export function CasioStorefront({
                 <path d="M14.2 21v-7.2h2.4l.4-2.8h-2.8V9.3c0-.8.2-1.4 1.4-1.4h1.5V5.4c-.3 0-1.2-.1-2.2-.1-2.2 0-3.7 1.3-3.7 3.8v2h-2.5v2.8H11v7.2h3.2z" />
               </svg>
             </SocialIcon>
+            <SocialIcon href={STORE_MAPS_URL} label="Cómo llegar — Montevideo 19, Mendoza">
+              <svg viewBox="0 0 24 24" className="h-[18px] w-[18px] fill-none stroke-current" strokeWidth="1.8" aria-hidden>
+                <path d="M12 21s7-4.5 7-11a7 7 0 1 0-14 0c0 6.5 7 11 7 11z" />
+                <circle cx="12" cy="10" r="2.5" />
+              </svg>
+            </SocialIcon>
             {whatsappE164 ? (
               <a
                 href={whatsappHref(whatsappE164)}
@@ -555,6 +562,16 @@ export function CasioStorefront({
         <div className="mx-auto w-full max-w-md px-4 py-8 sm:max-w-xl sm:px-6 md:max-w-3xl lg:max-w-5xl lg:px-8">
           <p className="font-casio text-lg tracking-[0.14em] text-casio-lime">EDUARDO VIÑOLO</p>
           <p className="mt-1 text-xs text-casio-muted">Calculadoras · Calidad y precisión desde 1981</p>
+          <p className="mt-1 text-xs text-casio-muted">
+            <a
+              href={STORE_MAPS_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hover:text-casio-lime hover:underline"
+            >
+              {STORE_ADDRESS_LINE}
+            </a>
+          </p>
 
           <div className="mt-5 flex flex-wrap gap-x-4 gap-y-2 text-[11px] text-casio-muted">
             <Link href="/catalogo" className="hover:text-casio-lime">
@@ -586,6 +603,9 @@ export function CasioStorefront({
             </a>
             <a href={facebookUrl} target="_blank" rel="noopener noreferrer" className="hover:text-casio-lime">
               Facebook
+            </a>
+            <a href={STORE_MAPS_URL} target="_blank" rel="noopener noreferrer" className="hover:text-casio-lime">
+              Ubicación
             </a>
           </div>
 
